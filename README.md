@@ -61,7 +61,7 @@ To build against another game version's DLLs, pass `-p:GameData=<folder with sts
 
 Two files in the mod's data folder switch on developer tools at start-up:
 
-- `preview.flag` opens the recap with sample data about 10 s after the game loads, screenshots every view into the data folder, then closes it. The file can hold a party size (`1`–`4`).
+- `preview.flag` opens the recap with sample data about 10 s after the game loads, screenshots every view into the data folder, then closes it. The file can hold a party size (`1`–`4`), or a comma-separated list of up to five character ids, like `IRONCLAD,IRONCLAD,REGENT`, to check players who share a character.
 - `replay.flag` rebuilds the recap of the last recorded run from `events.log` with the current rules.
 
 ## What's changed

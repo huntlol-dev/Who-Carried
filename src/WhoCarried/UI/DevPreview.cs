@@ -30,8 +30,9 @@ internal static class DevPreview
 
     private static void Run(string dataDir)
     {
-        // The flag can hold a party size (1–4) to check the hand's other layouts, or "m1", "m2"… for the installed
-        // modded characters four at a time (to check their art); four base characters otherwise.
+        // The flag can hold a party size (1–4) to check the hand's other layouts, "m1", "m2"… for the installed
+        // modded characters four at a time (to check their art), or a comma-separated list of up to five character
+        // ids ("IRONCLAD,IRONCLAD,REGENT") to check players who share a character; four base characters otherwise.
         string wanted = "";
         try { wanted = File.ReadAllText(Path.Combine(dataDir, "preview.flag")).Trim(); }
         catch (Exception) { }
@@ -47,6 +48,15 @@ internal static class DevPreview
             CharacterModel[] modded = all.Where(c => !vanilla.Contains(c.Id.Entry)).ToArray();
             characters = modded.Skip((Math.Max(1, page) - 1) * 4).Take(4).ToArray();
             Tracker.Note($"preview: modded characters {string.Join(", ", characters.Select(c => c.Id.Entry))} (of {modded.Length})");
+        }
+        else if (wanted.Contains(','))
+        {
+            characters = wanted.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(id => GameReader.CharacterById(id.ToUpperInvariant()))
+                .OfType<CharacterModel>()
+                .Take(5)
+                .ToArray();
+            Tracker.Note($"preview: characters {string.Join(", ", characters.Select(c => c.Id.Entry))}");
         }
         else
         {
@@ -302,7 +312,7 @@ internal static class DevPreview
 
     private static Sample BuildSample(CharacterModel[] characters)
     {
-        string[] names = { "Ash", "Mika", "Sam", "Jo" };
+        string[] names = { "Ash", "Mika", "Sam", "Jo", "Wren" };
         var players = new List<PlayerInfo>();
         var deckModels = new Dictionary<ulong, List<CardModel>>();
         for (int i = 0; i < characters.Length; i++)

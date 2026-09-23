@@ -12,9 +12,11 @@
 - Damage a mod's armour stops between block and HP (Zone the Spire's Marbled) is counted as block: chipped off an enemy it counts as enemy block knocked off, under the card that did it; soaked on a player or their pet it counts as that player's damage blocked. Measured at the game's own HP-loss hook, so any mod's layer counts, named or not.
 - An enemy a modded effect kills outright at the start or end of a turn, the way Doom does (Zone the Spire's Hallowed), counts its remaining HP as that effect's damage, shared by who applied the stacks.
 - A debuff that turns part of itself into another (Hallowed into Doom) hands the new stacks to whoever applied it, so a Doom kill credits the Hallowed's players in co-op. They don't count as Doom applied.
+- Players on the same character can be told apart. Everyone after the first gets a lighter shade of the character's colour, on every tab, the cards and the exported image. The climb has a gap between each player's part of every bar, and the Timeline names each line at its end.
 
 ### Changed
 
+- The scoreboard cards show more of each character's portrait.
 - Behind the scenes, with no change to the recap: the rules for who gets credit for an outright kill or for converted stacks are covered by automated tests, and everything the mod remembers about a fight is wiped in one step as it starts and ends.
 
 ### Fixed
