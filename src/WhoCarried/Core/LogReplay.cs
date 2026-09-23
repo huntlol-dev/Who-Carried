@@ -6,7 +6,7 @@ namespace WhoCarried.Core;
 /// <summary>
 /// Rebuilds a run's stats from the events.log the mod wrote while it was played, applying today's rules: block
 /// removed is kept apart from damage dealt, and pet attacks are split by what triggered them. Stats an older log never
-/// recorded (cards created, what enemy debuffs cost, Strength-loss prevention, in-fight HP lows) stay empty.
+/// recorded (cards created, what enemy debuffs cost, Strength-loss prevention, in-fight HP lows, support given to teammates) stay empty.
 /// </summary>
 public static class LogReplay
 {
@@ -30,6 +30,7 @@ public static class LogReplay
     private static readonly Regex RunEnded = new(Where + @"run ended: (victory|defeat)", RegexOptions.Compiled);
     private static readonly Regex HpLow = new(Where + @"(.+?) hp low (\d+)/(\d+)$", RegexOptions.Compiled);
     private static readonly Regex Badge = new(Where + @"(.+?) badge (\S+) \((\w+)\)$", RegexOptions.Compiled);
+    private static readonly Regex Gave = new(Where + @"(.+?) gave (\d+) (energy|cards|block|buffs|draws) to (.+?) \| (.*)$", RegexOptions.Compiled);
 
     /// <summary>The first line of a run's events.log, which <see cref="Parse"/> reads the run key back from.</summary>
     public static string HeaderLine(string version, string runKey, DateTime started) =>
@@ -42,6 +43,16 @@ public static class LogReplay
     /// <summary>A player's pet losing HP to an enemy (after its "[F.. A..] " prefix), which <see cref="Parse"/> reads back.</summary>
     public static string PetTookLine(string owner, string petId, int hp, string dealer) =>
         $"{owner} pet {petId} took {hp} hp | dealer {dealer}";
+
+    /// <summary>
+    /// Help one player gave another (after its "[F.. A..] " prefix), which <see cref="Parse"/> reads back.
+    /// <paramref name="source"/> is the id of what gave it, or "?".
+    /// </summary>
+    public static string SupportLine(string giver, string recipient, SupportKind kind, int amount, string source) =>
+        $"{giver} gave {amount} {SupportWord(kind)} to {recipient} | {source}";
+
+    /// <summary>The log's word for a kind of support: "energy", "cards", "block", "buffs", "draws".</summary>
+    public static string SupportWord(SupportKind kind) => kind.ToString().ToLowerInvariant();
 
     /// <param name="title">Display name for a model id (a card that made a pet attack); null falls back to the id.</param>
     public static Result Parse(IEnumerable<string> lines, Func<string, string?>? title = null)
@@ -111,6 +122,11 @@ public static class LogReplay
             else if ((m = PetTook.Match(line)).Success)
             {
                 if (Who(m.Groups[3].Value) is ulong id) stats.RecordPetTanked(id, Int(m.Groups[5]));
+            }
+            else if ((m = Gave.Match(line)).Success)
+            {
+                if (Who(m.Groups[3].Value) is ulong from && Who(m.Groups[6].Value) is ulong to)
+                    stats.RecordSupport(from, to, Enum.Parse<SupportKind>(m.Groups[5].Value, ignoreCase: true), Int(m.Groups[4]));
             }
             else if ((m = RunEnded.Match(line)).Success)
             {

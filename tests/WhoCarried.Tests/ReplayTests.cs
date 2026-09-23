@@ -172,4 +172,35 @@ public static class ReplayTests
         Check.Equal(3, p.Healed, "healed, starting HP on the first point excluded");
         Check.Equal("CARD.THETAILOR-SCRAP:1", $"{p.Deck[1].CardId}:{p.Deck[1].Upgrades}", "upgrades");
     }
+
+    [Test]
+    public static void ReplayReadsTheSupportLinesItWrites()
+    {
+        string[] log =
+        {
+            "Who Carried v1.2.0 - run SEED2:1 started 2026-09-23 20:00",
+            "player 11 = Moth (The Tailor) #5c350f",
+            "player 22 = Ironside (The Necrobinder) #ee82ee",
+            "[F3 A1] fight start: Toadpoles",
+            "[F3 A1] " + LogReplay.SupportLine("Moth", "Ironside", SupportKind.Energy, 2, "BELIEVE_IN_YOU"),
+            "[F3 A1] " + LogReplay.SupportLine("Moth", "Ironside", SupportKind.Block, 8, "RALLY"),
+            "[F3 A1] " + LogReplay.SupportLine("Moth", "Ironside", SupportKind.Draws, 1, "HUDDLE_UP"),
+            "[F3 A1] " + LogReplay.SupportLine("Ironside", "Moth", SupportKind.Cards, 3, "GLIMPSE_BEYOND"),
+            "[F3 A1] " + LogReplay.SupportLine("Ironside", "Moth", SupportKind.Buffs, 2, "BLAZE"),
+            "[F3 A1] " + LogReplay.SupportLine("Stranger", "Moth", SupportKind.Energy, 5, "?"),
+            "[F3 A1] support: no giver for 1 energy to Moth | ?",
+            "[F3 A1] fight end, saved",
+        };
+        Check.Equal("Moth gave 2 energy to Ironside | BELIEVE_IN_YOU",
+            LogReplay.SupportLine("Moth", "Ironside", SupportKind.Energy, 2, "BELIEVE_IN_YOU"), "line format");
+
+        LogReplay.Result r = LogReplay.Parse(log);
+        PlayerTotals moth = r.Stats.Get(11)!, ironside = r.Stats.Get(22)!;
+        Check.Equal(2, moth.EnergyGiven, "energy; an unknown giver and a no-giver line add nothing");
+        Check.Equal(8, moth.BlockGiven, "block");
+        Check.Equal(1, moth.CardsDrawnForTeam, "draws");
+        Check.Equal(3, ironside.CardsGiven, "cards");
+        Check.Equal(2, ironside.BuffsGiven, "buffs");
+        Check.Equal(0, ironside.EnergyGiven, "receiving isn't giving");
+    }
 }
