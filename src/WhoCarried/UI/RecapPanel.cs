@@ -184,10 +184,18 @@ internal static class RecapPanel
         closing.AddChild(Kit.Center(close));
         // Close is placed by hand rather than by the row, so it has to centre itself on the row's band the way
         // Kit.Center does for everything in it — otherwise the key line and Close sit at different heights.
-        Vector2 closingSize = closing.GetCombinedMinimumSize();
-        closing.Position = new Vector2(stageLeft + k.U(1566) - closingSize.X, (k.U(68) - closingSize.Y) / 2);
+        // It's placed again whenever its size changes: a substitute font (Chinese) can widen the word after this first
+        // measure, and a right edge fixed from the old width pushed Close off the screen.
+        void PlaceClosing()
+        {
+            Vector2 closingSize = closing.GetCombinedMinimumSize();
+            closing.Position = new Vector2(stageLeft + k.U(1566) - closingSize.X, (k.U(68) - closingSize.Y) / 2);
+            row.Size = new Vector2(Math.Max(k.U(200), closing.Position.X - k.U(20) - row.Position.X), k.U(68));
+        }
+        PlaceClosing();
+        closing.MinimumSizeChanged += PlaceClosing;
+        closing.Resized += PlaceClosing;
         bar.AddChild(closing);
-        row.Size = new Vector2(Math.Max(k.U(200), closing.Position.X - k.U(20) - row.Position.X), k.U(68));
 
         string partyShown = "";
         void Apply(RecapView v)
