@@ -58,11 +58,10 @@ internal static class SummaryCard
             body.AddChild(Section(k, Loc.Text("WHO_CARRIED.tab.debuffs"), k.Icon(DebuffBuilder.IconPrefix + "VULNERABLE_POWER"),
                 DebuffsTab.Applied(k, view, Inner, 3, null), Loc.Text("WHO_CARRIED.debuffs.hint")));
         // Only when someone gave a teammate something: a solo run, or a co-op run with no gifts, leaves it out.
-        // Headed by the top-ranked player's energy gem; the colourless one is a grey orb.
+        // One row of small cards, as many across as there are kinds of help given.
         if (view.HasSupport)
-            body.AddChild(Section(k, Loc.Text("WHO_CARRIED.tab.support"),
-                k.Icon(RecapTexts.EnergyKey(view.Support[0].IconKey)) ?? GameArt.Get(GameArt.Energy),
-                SupportTab.Plates(k, view, Inner, 2, 104, null, compact: true), Loc.Text("WHO_CARRIED.support.hint")));
+            body.AddChild(Section(k, Loc.Text("WHO_CARRIED.tab.support"), SupportTab.HeadingArt(k, view),
+                SupportTab.Cards(k, view, Inner, SupportTab.KindsGiven(view), null, compact: true), Loc.Text("WHO_CARRIED.support.hint")));
         if (view.Defense.Count > 0)
             body.AddChild(Section(k, Loc.Text("WHO_CARRIED.tab.defense"), GameArt.Get(GameArt.Block), DefenseTab.Plates(k, view, Inner, 2, 104, null, compact: true)));
         if (view.Decks.Any(d => d.Entries.Count > 0))

@@ -50,15 +50,17 @@ Totals only: no breakdown by source or by recipient.
 
 The eighth tab, placed after Debuffs: `Scoreboard, Awards, Sources, Debuffs, Support, Timeline, Defense, Decks`. `RecapPanel.Views`, the pad-tab array and `DevPreview.TabNames` all gain the entry.
 
-- One plate per player, styled like the Defense tab's plates: name and character icon in the player's colour, then five stat lines, each a game icon and a number. Icons: `GameArt.Energy`, `GameArt.Cards` and `GameArt.Block`; Strength's power icon, through the key the Debuffs tab already uses for powers (`DebuffBuilder.IconPrefix + "STRENGTH_POWER"`); and a new `GameArt` entry for the combat draw pile, falling back to `GameArt.Deck` if its path isn't found in the game's resources.
-- The tab is always there, so tab positions and bumper navigation don't depend on the run. When `HasSupport` is false it shows one line instead of the plates:
+- One card per kind of help, styled like the Debuffs tab's cards, three across. Each card is titled with what it counts, always saying *given*: "Energy given to teammates", "Block given to teammates"… (players found "block" alone confusing). Beside the title is the team's total, then the award that kind won and its winner, then one bar per player who gave any, in their colour, longest first.
+- Kinds nobody gave are left out, so a sparse run shows a few full cards, not rows of zeros. (A first version had one plate per player with five numbers each. It looked empty, and on the image it repeated the Defense section's portraits.)
+- Icons are the awards' pictures: energy, `GameArt.Cards`, `GameArt.Block`, Strength's power icon (`DebuffBuilder.IconPrefix + "STRENGTH_POWER"`), and a new `GameArt` entry for the combat draw pile, falling back to `GameArt.Deck` if its path isn't found in the game's resources. Energy wears the leading giver's own energy gem, since the colourless one is a grey orb.
+- The tab is always there, so tab positions and bumper navigation don't depend on the run. When `HasSupport` is false it shows one line instead of the cards:
   - Co-op: "Help given to teammates shows here. Nothing yet."
-  - Solo: "Support is what players give teammates in co-op."
+  - Solo: "Support is what players give their teammates in co-op."
 - Updates live from `Tracker.Changed`, like the other tabs.
 
 ## Exported image
 
-`SummaryCard` gets a **Support** section after Debuffs, with compact plates (the `DefenseTab.Plates(…, compact: true)` pattern). **It's left out entirely when `HasSupport` is false**: in solo runs, and in co-op runs where nobody gave anything. The new awards appear in the image's Awards section like any others, and only when won.
+`SummaryCard` gets a **Support** section after Debuffs: the same cards made small, in one row, as many across as there are kinds given, with short titles ("Block given") and no award line. No portraits, so the image doesn't show each player's face twice. **It's left out entirely when `HasSupport` is false**: in solo runs, and in co-op runs where nobody gave anything. The new awards appear in the image's Awards section like any others, and only when won.
 
 ## Awards
 

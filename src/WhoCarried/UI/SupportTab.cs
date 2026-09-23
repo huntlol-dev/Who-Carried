@@ -5,24 +5,19 @@ using WhoCarried.Localization;
 namespace WhoCarried.UI;
 
 /// <summary>
-/// What each player gave their teammates, as nameplates: their portrait, then the energy, cards, block, buffs and draws
-/// they gave. With nothing given (or nobody to give to) it says so instead.
+/// What players gave their teammates, one card per kind of help: its icon, what it is ("Block given to teammates"), the
+/// team's total, and a bar per player who gave any, longest first, with the award it won. Kinds nobody gave are left
+/// out. With nothing given (or nobody to give to) it says so instead.
 /// </summary>
 internal static class SupportTab
 {
     public static Control Create(Kit k, RecapView view, Live live)
     {
         Control tab = k.Box(RecapPanel.DesignW, RecapPanel.DesignH);
-        // Two plates a row; five or more players (modded lobbies) get shorter plates, without the "gave teammates" line,
-        // so everything still fits. The hint follows the plates, however tall they came out.
-        int rows = (Math.Max(1, view.Support.Count) + 1) / 2;
-        float plateH = rows <= 2 ? 230 : Math.Max(150, (560 - 24 * (rows - 1)) / rows);
-        VBoxContainer shown = k.Column(26);
-        shown.AddChild(Plates(k, view, 1522, 2, plateH, live, subtitle: rows <= 2));
-        Label note = k.Text(Loc.Text("WHO_CARRIED.support.hint"), 15, RecapTheme.Muted);
-        note.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        shown.AddChild(note);
-        tab.AddChild(k.At(shown, 40, 146, 1522, -1));
+        VBoxContainer shown = k.Column(14);
+        shown.AddChild(k.Heading(Loc.Text("WHO_CARRIED.support.heading"), HeadingArt(k, view), Loc.Text("WHO_CARRIED.support.hint")));
+        shown.AddChild(Cards(k, view, 1522, 3, live));
+        tab.AddChild(k.At(shown, 40, 140, 1522, -1));
 
         Label empty = k.Text("", 18, RecapTheme.Muted);
         empty.AutowrapMode = TextServer.AutowrapMode.WordSmart;
@@ -39,71 +34,141 @@ internal static class SupportTab
         return tab;
     }
 
-    /// <summary>The nameplates in a grid, in scoreboard order.</summary>
-    /// <param name="subtitle">The "gave teammates" line under each name (never on compact plates).</param>
-    public static Control Plates(Kit k, RecapView view, float width, int columns, float height, Live? live, bool compact = false,
-                                 bool subtitle = true)
+    /// <summary>One kind of help: its words (full and compact), colour, value, and the award its leader can win.</summary>
+    private sealed record Kind(string Words, string Short, Color Tone, Func<SupportRow, int> Value, string Award);
+
+    private static readonly Kind[] Kinds =
     {
-        float gap = compact ? 18 : 30;
+        new("WHO_CARRIED.support.energy", "WHO_CARRIED.support.energy_short", RecapTheme.Gold, r => r.Energy, AwardBuilder.Battery),
+        new("WHO_CARRIED.support.cards", "WHO_CARRIED.support.cards_short", RecapTheme.Text, r => r.Cards, AwardBuilder.CarePackage),
+        new("WHO_CARRIED.support.block", "WHO_CARRIED.support.block_short", RecapTheme.Blocked, r => r.Block, AwardBuilder.Bodyguard),
+        new("WHO_CARRIED.support.buffs", "WHO_CARRIED.support.buffs_short", RecapTheme.Taken, r => r.Buffs, AwardBuilder.Coach),
+        new("WHO_CARRIED.support.draws", "WHO_CARRIED.support.draws_short", RecapTheme.Teal, r => r.Draws, AwardBuilder.Playmaker),
+    };
+
+    /// <summary>The top-ranked player's energy gem, heading the support; the colourless one is a grey orb.</summary>
+    public static Texture2D? HeadingArt(Kit k, RecapView view) =>
+        k.Icon(RecapTexts.EnergyKey(view.Support.FirstOrDefault()?.IconKey)) ?? GameArt.Get(GameArt.Energy);
+
+    /// <summary>How many kinds of help anyone gave: the number of cards <see cref="Cards"/> shows.</summary>
+    public static int KindsGiven(RecapView view) => Kinds.Count(kind => Givers(view, kind).Count > 0);
+
+    /// <summary>The players who gave this kind of help, most first.</summary>
+    private static List<SupportRow> Givers(RecapView view, Kind kind) =>
+        view.Support.Where(r => kind.Value(r) > 0).OrderByDescending(kind.Value).ToList();
+
+    /// <summary>
+    /// The cards in a grid, in the order of <see cref="Kinds"/>. Compact (the saved image) drops the award line and uses
+    /// the short words, one row of cards across.
+    /// </summary>
+    public static Control Cards(Kit k, RecapView view, float width, int columns, Live? live, bool compact = false)
+    {
+        float gap = compact ? 12 : 18;
         var grid = new GridContainer { Columns = columns, MouseFilter = Control.MouseFilterEnum.Ignore };
         grid.AddThemeConstantOverride("h_separation", k.F(gap));
-        grid.AddThemeConstantOverride("v_separation", k.F(compact ? 14 : 24));
-        float plateW = (width - gap * (columns - 1)) / columns;
-        var plates = new KeyedRows<SupportRow>(grid, r => r.Label, r => Plate(k, r, plateW, height, compact, subtitle && !compact));
-        void Sync(RecapView v) => plates.Sync(v.Support);
-        Sync(view);
-        live?.On(Sync);
+        grid.AddThemeConstantOverride("v_separation", k.F(gap));
+        float cardW = (width - gap * (columns - 1)) / columns;
+        string built = "";
+
+        // Rebuilt only when which kinds show, or who gave them in what order, changes; otherwise the numbers just move.
+        static string Signature(RecapView v) =>
+            string.Join("|", Kinds.Select(kind => string.Join(",", Givers(v, kind).Select(r => r.Label))));
+
+        var updaters = new List<Action<RecapView>>();
+        void Apply(RecapView v)
+        {
+            string signature = Signature(v);
+            if (signature == built)
+            {
+                foreach (Action<RecapView> update in updaters) update(v);
+                return;
+            }
+            built = signature;
+            updaters.Clear();
+            foreach (Node child in grid.GetChildren())
+            {
+                grid.RemoveChild(child);
+                child.QueueFree();
+            }
+            foreach (Kind kind in Kinds.Where(kind => Givers(v, kind).Count > 0))
+            {
+                (Control card, Action<RecapView> update) = Card(k, v, kind, cardW, compact);
+                grid.AddChild(card);
+                updaters.Add(update);
+            }
+        }
+        Apply(view);
+        live?.On(Apply);
         return grid;
     }
 
-    /// <summary>Each stat's icon, colour, "{0} energy"-style words, and value. Energy wears the player's own gem.</summary>
-    private static List<(Texture2D? Icon, Color Tone, string Words, Func<SupportRow, int> Value)> Stats(Kit k, SupportRow row) => new()
+    private static (Control, Action<RecapView>) Card(Kit k, RecapView view, Kind kind, float width, bool compact)
     {
-        (k.Icon(RecapTexts.EnergyKey(row.IconKey)) ?? GameArt.Get(GameArt.Energy), RecapTheme.Gold, "WHO_CARRIED.support.energy", r => r.Energy),
-        (GameArt.Get(GameArt.Cards), RecapTheme.Text, "WHO_CARRIED.support.cards", r => r.Cards),
-        (GameArt.Get(GameArt.Block), RecapTheme.Blocked, "WHO_CARRIED.support.block", r => r.Block),
-        (k.Icon(DebuffBuilder.IconPrefix + "STRENGTH_POWER"), RecapTheme.Taken, "WHO_CARRIED.support.buffs", r => r.Buffs),
-        (GameArt.Get(GameArt.DrawPile) ?? GameArt.Get(GameArt.Deck), RecapTheme.Teal, "WHO_CARRIED.support.draws", r => r.Draws),
-    };
+        List<SupportRow> givers = Givers(view, kind);
+        PanelContainer tip = compact ? k.Tip(10, 8) : k.Tip(16, 12);
+        tip.CustomMinimumSize = k.V(width, 0);
+        VBoxContainer column = k.Column(compact ? 2 : 4);
+        tip.AddChild(column);
 
-    private static (Control, Action<SupportRow>) Plate(Kit k, SupportRow row, float width, float height, bool compact, bool subtitle)
-    {
-        Color color = RecapTheme.FromHex(row.ColorHex), accent = RecapTheme.Accent(row.ColorHex);
-        PanelContainer tip = compact ? k.Tip(10, 8, new Color(accent, 0.47f)) : k.Tip(24, 20, new Color(accent, 0.47f));
-        tip.CustomMinimumSize = k.V(width, height);
-        HBoxContainer line = k.Row(compact ? 12 : 24);
-        tip.AddChild(line);
-        float portraitH = compact ? 84 : height - 42, portraitW = compact ? 66 : Math.Min(170, portraitH * 0.78f);
-        line.AddChild(Kit.Center(DefenseTab.Portrait(k, row.IconKey, color, portraitW, portraitH)));
+        HBoxContainer title = k.Row(compact ? 6 : 10);
+        float art = compact ? 20 : 34;
+        // The same picture as the kind's award; energy wears the gem of whoever gave the most.
+        title.AddChild(Kit.Center(k.Pic(RecapTexts.AwardArt(k, kind.Award, givers[0].IconKey), art, art)));
+        Label name = k.Text(Loc.Text(compact ? kind.Short : kind.Words), compact ? 14 : 22, kind.Tone, true, Ink.Soft);
+        name.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        name.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
+        title.AddChild(Kit.Center(name));
+        Label total = k.Text("", compact ? 12 : 16, RecapTheme.Muted, true);
+        title.AddChild(Kit.Center(total));
+        column.AddChild(title);
 
-        VBoxContainer right = k.Column(compact ? 6 : 10);
-        right.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-        line.AddChild(Kit.Center(right));
-        Label name = k.Text(row.Label, compact ? 20 : 34, accent, true, compact ? Ink.Soft : Ink.Strong);
-        k.Fit(name, width - portraitW - (compact ? 40 : 96), compact ? 14 : 20);
-        right.AddChild(name);
-        if (subtitle) right.AddChild(k.Text(Loc.Text("WHO_CARRIED.support.gave"), 16, RecapTheme.Muted));
+        // Whoever gave the most won this kind's award, if they gave enough for it.
+        HBoxContainer awardLine = k.Row(6);
+        Label awardName = k.Text("", 14, RecapTheme.Gold, true), awardWinner = k.Text("", 14, RecapTheme.Muted, true);
+        awardLine.AddChild(awardName);
+        awardLine.AddChild(awardWinner);
+        if (!compact) column.AddChild(awardLine);
 
-        var facts = new GridContainer { Columns = 3, MouseFilter = Control.MouseFilterEnum.Ignore };
-        facts.AddThemeConstantOverride("h_separation", k.F(compact ? 14 : 28));
-        facts.AddThemeConstantOverride("v_separation", k.F(compact ? 4 : 12));
-        right.AddChild(facts);
-        float icon = compact ? 18 : 30, text = compact ? 13 : 18;
-        var numbers = new List<(LiveNumber Number, Func<SupportRow, int> Value)>();
-        foreach ((Texture2D? art, Color tone, string words, Func<SupportRow, int> value) in Stats(k, row))
+        float icon = compact ? 16 : 22, who = compact ? 62 : 104, amount = compact ? 30 : 48;
+        var bars = new List<(LiveNumber Amount, LiveBar Bar)>();
+        foreach (SupportRow row in givers)
         {
-            HBoxContainer fact = k.Row(compact ? 5 : 8);
-            if (art != null) fact.AddChild(Kit.Center(k.Pic(art, icon, icon)));
-            var number = new LiveNumber(k.Text("", text, tone, true, Ink.Soft), value(row), format: n => Loc.Text(words, Kit.Num(n)));
-            fact.AddChild(Kit.Center(number.Control));
-            facts.AddChild(fact);
-            numbers.Add((number, value));
+            Color color = RecapTheme.Accent(row.ColorHex);
+            HBoxContainer line = k.Row(compact ? 5 : 8);
+            line.CustomMinimumSize = k.V(0, compact ? 18 : 26);
+            line.AddChild(Kit.Center(k.Pic(k.Icon(row.IconKey), icon, icon)));
+            Label label = k.Text(row.Label, compact ? 12 : 15, color, true, Ink.Soft);
+            label.CustomMinimumSize = k.V(who, 0);
+            label.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
+            line.AddChild(Kit.Center(label));
+            float barW = width - (compact ? 20 : 32) - icon - who - amount - (compact ? 15 : 24);
+            var fill = new LiveBar(1, color, k.U(barW), k.U(compact ? 5 : 7));
+            line.AddChild(Kit.Center(fill.Control));
+            Label amountLabel = k.Text("", compact ? 12 : 16, RecapTheme.Text, true, Ink.Soft);
+            amountLabel.HorizontalAlignment = HorizontalAlignment.Right;
+            amountLabel.CustomMinimumSize = k.V(amount, 0);
+            var number = new LiveNumber(amountLabel, kind.Value(row));
+            line.AddChild(Kit.Center(number.Control));
+            column.AddChild(line);
+            bars.Add((number, fill));
         }
 
-        void Apply(SupportRow r)
+        void Update(RecapView v)
         {
-            foreach ((LiveNumber number, Func<SupportRow, int> value) in numbers) number.Set(value(r));
+            List<SupportRow> now = Givers(v, kind);
+            int most = now.Count > 0 ? kind.Value(now[0]) : 1;
+            total.Text = Kit.Num(now.Sum(kind.Value));
+            for (int i = 0; i < now.Count && i < bars.Count; i++)
+            {
+                bars[i].Amount.Set(kind.Value(now[i]));
+                bars[i].Bar.Set((double)kind.Value(now[i]) / most);
+            }
+            Award? award = v.Awards.FirstOrDefault(a => a.Title == kind.Award);
+            awardLine.Visible = award != null;
+            awardName.Text = award == null ? "" : Loc.Text(award.Title);
+            awardWinner.Text = award == null ? "" : "· " + award.PlayerName;
         }
-        return (tip, Apply);
+        Update(view);
+        return (tip, Update);
     }
 }
