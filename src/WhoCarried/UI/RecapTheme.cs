@@ -79,12 +79,7 @@ internal static class RecapTheme
     /// A player colour made readable on the dark table, for text and thin bars: dark colours (The Tailor's brown) are
     /// lightened just enough. Card frames keep the true colour.
     /// </summary>
-    public static Color Accent(string hex)
-    {
-        Color color = FromHex(hex);
-        for (int i = 0; i < 10 && color.Luminance < 0.45f; i++) color = color.Lightened(0.15f);
-        return color;
-    }
+    public static Color Accent(string hex) => FromHex(Core.ColourMath.Readable(hex));
 
     /// <summary>A badge's name colour, and a plain medal when its picture can't be loaded.</summary>
     public static Color MedalColor(string rarity) => rarity switch
