@@ -73,6 +73,8 @@ Two files in the mod's data folder switch on developer tools at start-up:
 
 Made by huntlol-dev for a co-op group that couldn't stop arguing. Code written with help from AI (Claude Code); the design docs show how.
 
+Simplified Chinese translation by [米拉克 (MerakW)](https://github.com/MerakW).
+
 Not affiliated with or endorsed by Mega Crit. Slay the Spire is a trademark of Mega Crit.
 
 ## License
