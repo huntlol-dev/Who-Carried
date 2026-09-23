@@ -60,4 +60,17 @@ public static class SupportTests
         Check.Equal(0, loaded.EnergyGiven + loaded.CardsGiven + loaded.BlockGiven + loaded.BuffsGiven + loaded.CardsDrawnForTeam,
             "support starts at nothing");
     }
+
+    [Test]
+    public static void TheGiverIsTheMostDirectOneTheGameGives()
+    {
+        ulong[] alice = { 1 }, both = { 1, 2 }, nobody = Array.Empty<ulong>();
+        Check.Equal((ulong?)3, SupportCredit.Giver(3, 4, alice, 5), "a giver the game named wins");
+        Check.Equal((ulong?)4, SupportCredit.Giver(null, 4, alice, 5), "then a turn hook's owner");
+        Check.Equal((ulong?)1, SupportCredit.Giver(null, null, alice, 5), "then the one player whose card or potion is working");
+        Check.Equal((ulong?)null, SupportCredit.Giver(null, null, both, 5), "two players mid-effect: no guess");
+        Check.Equal((ulong?)null, SupportCredit.Giver(null, null, nobody, 5), "nobody mid-effect: the action owner isn't asked");
+        Check.Equal((ulong?)5, SupportCredit.Giver(null, null, null, 5), "only when the game can't say who's mid-effect");
+        Check.Equal((ulong?)null, SupportCredit.Giver(null, null, null, null), "nothing to go on");
+    }
 }
