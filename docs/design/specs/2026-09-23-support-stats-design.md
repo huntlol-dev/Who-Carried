@@ -23,10 +23,13 @@ The existing **cards created** count (Sources tab, Card factory award) doesn't c
 Energy and draws don't come with a giver, and block only has one when a card gave it. In order:
 
 1. **A turn hook is running** (`EffectSources.Running` is a `PowerModel`): the power's `Applier`'s player. This covers energy-next-turn powers and Radiance, which pay out at the start of the recipient's turn.
-2. **A player action is running** (`RunManager.Instance.ActionExecutor.CurrentlyRunningAction`): its `OwnerId`. `PlayCardAction` and `UsePotionAction` both set it to the player who played the card or potion.
-3. **Neither:** no giver. Not counted; the log gets a `support: no giver` line with what was running.
+2. **Exactly one player's card or potion is taking effect.** The game counts this per player: `CombatManager.IsExecutingCardOrPotionEffect(Player)` is true from just before a card's `OnPlay` (or a potion's `OnUse`) until its effect is done, nested auto-plays included. If exactly one player in the run has one running, they're the giver. If two do (one player's card set off another's), nobody is, so the mod doesn't guess.
+3. **Only if the game lacks that method** (it's looked up by name in `GameCompat`, like the other APIs that differ between branches): the running action's `OwnerId` (`RunManager.Instance.ActionExecutor.CurrentlyRunningAction`), which `PlayCardAction` and `UsePotionAction` set to their player.
+4. **None of these:** no giver. Not counted; the log gets a `support: no giver` line naming the kind, amount and recipient.
 
-This lives in one method, `Game/SupportGiver.cs`, so each hook asks it the same way.
+The order is a pure rule in `Core/SupportCredit.cs`, so it's unit-tested. `Game/SupportGiver.cs` gathers the four inputs from the game.
+
+Accepted limit: a card's effect bracket also covers the game's after-play hooks. So if Alice's card sets off Bob's own relic and that relic gives Bob energy, it's credited to Alice. Nobody has checked how often vanilla does this. The `gave` log lines name what was running, so the in-game check below can spot it.
 
 ## Stats (Core)
 
@@ -72,7 +75,7 @@ Five new awards, **co-op only** (after the `if (!team) return awards;` line), ea
 - The minimums are constants beside `MinCardsCreated`, to tune after play.
 - **Order:** straight after Protector, before Wall. A player's first award is their scoreboard headline, so a support player's headline is their support title rather than Wall or Siege breaker.
 - **Art** (`RecapTexts.AwardArt`), the same five icons as the Support plates: energy for Battery, cards for Care package, block for Bodyguard, Strength for Coach, the draw pile for Playmaker.
-- **Awards tab layout:** `AwardsTab.Grid` uses two rows at most, so sixteen awards would squeeze each card to about 120 px. It changes to one row up to 5 awards, two up to 10, three beyond. The panel scrolls if three rows don't fit its height; check this in the 4-player preview.
+- **Awards tab layout:** `AwardsTab.Grid` uses two rows at most, so sixteen awards would squeeze each card to about 120 px. It changes to one row up to 5 awards, two up to 10, three beyond, with the card width capped so the rows also fit the spread's 640 px height. Up to ten awards lay out exactly as today. The sizing moves to a pure `Core/AwardGrid.cs` so it's unit-tested.
 
 ## Log and replay
 
