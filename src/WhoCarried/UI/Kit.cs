@@ -230,8 +230,13 @@ internal sealed class Kit
         return rect;
     }
 
-    /// <summary>A texture cropped to cover a box, like CSS object-fit: cover; <paramref name="focusY"/> picks the band kept.</summary>
-    public Control Cover(Texture2D? texture, float width, float height, float focusY = 0.5f)
+    /// <summary>
+    /// A texture cropped to cover a box, like CSS object-fit: cover; <paramref name="focusY"/> picks the band kept.
+    /// <paramref name="zoom"/> below 1 shows more of the picture (0: all of it, like contain); the strips that leaves
+    /// either side are filled with the colours <paramref name="sides"/> gives for the picture.
+    /// </summary>
+    public Control Cover(Texture2D? texture, float width, float height, float focusY = 0.5f, float zoom = 1,
+                         Func<Texture2D, (Color Left, Color Right)>? sides = null)
     {
         Control box = Box(width, height);
         texture = Alive(texture);
@@ -244,15 +249,20 @@ internal sealed class Kit
         {
             if (Alive(keep.Texture) is not Texture2D picture) return;
             Vector2 size = box.Size, source = picture.GetSize();
-            if (source.X <= 0 || source.Y <= 0) return;
-            float scale = Math.Max(size.X / source.X, size.Y / source.Y);
-            Vector2 crop = size / scale;
-            var origin = new Vector2((source.X - crop.X) * 0.5f, (source.Y - crop.Y) * focusY);
-            box.DrawTextureRectRegion(picture, new Rect2(Vector2.Zero, size), new Rect2(origin, crop));
+            if (PictureFit.Place(size.X, size.Y, source.X, source.Y, zoom, focusY) is not PictureFit.Placement place) return;
+            if (sides != null && place.Dest.W < size.X - 0.5f)
+            {
+                (Color left, Color right) = sides(picture);
+                box.DrawRect(new Rect2(0, 0, size.X / 2, size.Y), left);
+                box.DrawRect(new Rect2(size.X / 2, 0, size.X - size.X / 2, size.Y), right);
+            }
+            box.DrawTextureRectRegion(picture, ToRect(place.Dest), ToRect(place.Source));
         };
         box.Resized += box.QueueRedraw;
         return box;
     }
+
+    private static Rect2 ToRect(PictureFit.Rect r) => new(r.X, r.Y, r.W, r.H);
 
     /// <summary>A soft radial glow of a colour: behind award icons, the table's spotlight.</summary>
     public TextureRect Glow(Color inner, Color outer, float width, float height, Vector2? center = null)

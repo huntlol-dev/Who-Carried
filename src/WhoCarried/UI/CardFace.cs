@@ -24,6 +24,9 @@ internal sealed class CardFace
     /// <summary>Height over width, like the game's cards. The card's shape lives in <see cref="HandLayout"/>.</summary>
     public const float Aspect = HandLayout.Aspect;
 
+    /// <summary>How far the portrait is zoomed: 1 fills the picture window (cropping), 0 shows all of it.</summary>
+    public const float PortraitZoom = 0.8f;
+
     private readonly Kit _k;
     private readonly float _w, _h, _em;
     private readonly Label _gemText;
@@ -59,7 +62,10 @@ internal sealed class CardFace
         }
         else
         {
-            Root.AddChild(k.At(k.Cover(spec.Portrait, pw, ph, 0.18f), px, py));
+            // Zoomed out partway, so more of the portrait shows; the strips beside it take the portrait's own edge colours.
+            Color strip = c.Darkened(0.6f);
+            Root.AddChild(k.At(k.Cover(spec.Portrait, pw, ph, 0.18f, PortraitZoom,
+                picture => GameArt.EdgeColours(picture) ?? (strip, strip)), px, py));
         }
 
         Texture2D? frame = GameArt.Get(GameArt.Frame);
