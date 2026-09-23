@@ -30,12 +30,12 @@ internal static class AwardsTab
                 shown = signature;
                 foreach ((CardFace face, _, _) in cards.Values) face.Root.QueueFree();
                 cards.Clear();
-                (float width, float step, int columns) = Grid(v.Awards.Count);
+                AwardGrid.Layout grid = AwardGrid.For(v.Awards.Count);
                 for (int i = 0; i < v.Awards.Count; i++)
                 {
                     Award award = v.Awards[i];
-                    (CardFace face, Label value, Label detail) = AwardCard(k, award, width);
-                    k.At(face.Root, (i % columns) * step, (i / columns) * (width * CardFace.Aspect + 22));
+                    (CardFace face, Label value, Label detail) = AwardCard(k, award, grid.Width);
+                    k.At(face.Root, (i % grid.Columns) * grid.Step, (i / grid.Columns) * grid.RowStep);
                     face.LiftOnHover();
                     spread.AddChild(face.Root);
                     cards[$"{award.Title}:{award.PlayerId}"] = (face, value, detail);
@@ -53,15 +53,6 @@ internal static class AwardsTab
 
         tab.AddChild(k.At(Relics(k, view, 378, full: true, live), 1190, 140, 378, -1));
         return tab;
-    }
-
-    /// <summary>One row of cards for up to five awards, else two rows: as wide as fits, 206 at most.</summary>
-    private static (float Width, float Step, int Columns) Grid(int count)
-    {
-        int rows = count <= 5 ? 1 : 2;
-        int columns = Math.Max(1, (count + rows - 1) / rows);
-        float step = Math.Min(226, 1130f / columns);
-        return (step - 20, step, columns);
     }
 
     public static (CardFace Face, Label Value, Label Detail) AwardCard(Kit k, Award award, float width)

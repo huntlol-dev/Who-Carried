@@ -253,4 +253,32 @@ public static class AwardTests
         Check.Equal("Alice", Find(a, AwardBuilder.Battery)!.PlayerName, "a tie goes to the higher-ranked player");
         Check.Equal(AwardBuilder.Battery, AwardBuilder.Headline(a, 1), "Alice's headline is her support award, not Wall");
     }
+
+    [Test]
+    public static void UpToTenAwardsLayOutAsTheyAlwaysDid()
+    {
+        // The old rule: one row up to five, else two; steps of 1130 / columns, 226 at most; cards 20 narrower.
+        foreach (int count in Enumerable.Range(1, 10))
+        {
+            int rows = count <= 5 ? 1 : 2, columns = (count + rows - 1) / rows;
+            float step = Math.Min(226, 1130f / columns);
+            AwardGrid.Layout g = AwardGrid.For(count);
+            Check.Equal(columns, g.Columns, $"{count} awards: columns");
+            Check.Near(step, g.Step, $"{count} awards: step", 0.001);
+            Check.Near(step - 20, g.Width, $"{count} awards: width", 0.001);
+        }
+    }
+
+    [Test]
+    public static void ManyAwardsFitTheSpreadBothWays()
+    {
+        foreach (int count in Enumerable.Range(11, 6))
+        {
+            AwardGrid.Layout g = AwardGrid.For(count);
+            int rows = (count + g.Columns - 1) / g.Columns;
+            Check.True(rows == 3, $"{count} awards: three rows");
+            Check.True(g.Columns * g.Step - AwardGrid.GapX <= AwardGrid.AreaW + 0.01, $"{count} awards fit across");
+            Check.True((rows - 1) * g.RowStep + g.Width * HandLayout.Aspect <= AwardGrid.AreaH + 0.01, $"{count} awards fit down");
+        }
+    }
 }
