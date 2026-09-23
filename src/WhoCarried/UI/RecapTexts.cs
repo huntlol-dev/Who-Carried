@@ -63,7 +63,7 @@ internal static class RecapTexts
     public static int TeamDamage(RecapView view) => view.Overview.Where(r => r.Share != null).Sum(r => r.Value);
 
     /// <summary>The picture for each of the recap's own awards, from the game's icons.</summary>
-    public static Texture2D? AwardArt(Kit k, string title) => title switch
+    public static Texture2D? AwardArt(Kit k, Award award) => award.Title switch
     {
         AwardBuilder.HeavyHitter => GameArt.Get(GameArt.Swords),
         AwardBuilder.Enabler => k.Icon(DebuffBuilder.IconPrefix + "VULNERABLE_POWER"),
@@ -75,7 +75,7 @@ internal static class RecapTexts
         AwardBuilder.CardFactory => GameArt.Get(GameArt.Deck),
         AwardBuilder.Unscathed => GameArt.Get(GameArt.Perfect),
         AwardBuilder.PunchingBag => GameArt.Get(GameArt.Skull),
-        AwardBuilder.Battery => GameArt.Get(GameArt.Energy),
+        AwardBuilder.Battery => k.Icon(EnergyKey(award.IconKey)) ?? GameArt.Get(GameArt.Energy),
         AwardBuilder.CarePackage => GameArt.Get(GameArt.Cards),
         AwardBuilder.Bodyguard => GameArt.Get(GameArt.Block),
         AwardBuilder.Coach => k.Icon(DebuffBuilder.IconPrefix + "STRENGTH_POWER"),

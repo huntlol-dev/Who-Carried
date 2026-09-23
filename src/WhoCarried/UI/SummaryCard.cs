@@ -58,8 +58,10 @@ internal static class SummaryCard
             body.AddChild(Section(k, Loc.Text("WHO_CARRIED.tab.debuffs"), k.Icon(DebuffBuilder.IconPrefix + "VULNERABLE_POWER"),
                 DebuffsTab.Applied(k, view, Inner, 3, null), Loc.Text("WHO_CARRIED.debuffs.hint")));
         // Only when someone gave a teammate something: a solo run, or a co-op run with no gifts, leaves it out.
+        // Headed by the top-ranked player's energy gem; the colourless one is a grey orb.
         if (view.HasSupport)
-            body.AddChild(Section(k, Loc.Text("WHO_CARRIED.tab.support"), GameArt.Get(GameArt.Energy),
+            body.AddChild(Section(k, Loc.Text("WHO_CARRIED.tab.support"),
+                k.Icon(RecapTexts.EnergyKey(view.Support[0].IconKey)) ?? GameArt.Get(GameArt.Energy),
                 SupportTab.Plates(k, view, Inner, 2, 104, null, compact: true), Loc.Text("WHO_CARRIED.support.hint")));
         if (view.Defense.Count > 0)
             body.AddChild(Section(k, Loc.Text("WHO_CARRIED.tab.defense"), GameArt.Get(GameArt.Block), DefenseTab.Plates(k, view, Inner, 2, 104, null, compact: true)));
@@ -220,7 +222,7 @@ internal static class SummaryCard
             StyleBoxFlat mask = RecapTheme.Box(RecapTheme.Inset, 6);
             tile.AddThemeStyleboxOverride("panel", mask);
             tile.AddChild(k.Glow(color.Lerp(Colors.White, 0.1f), color.Lerp(new Color("0b0f16"), 0.65f), 64, 50));
-            tile.AddChild(k.At(k.Pic(RecapTexts.AwardArt(k, award.Title), 30, 30), 17, 10));
+            tile.AddChild(k.At(k.Pic(RecapTexts.AwardArt(k, award), 30, 30), 17, 10));
             art.AddChild(tile);
             var ring = new Panel { Size = new Vector2(64, 50), MouseFilter = Control.MouseFilterEnum.Ignore };
             StyleBoxFlat ringBox = RecapTheme.Box(RecapTheme.Clear, 6, accent, 2);

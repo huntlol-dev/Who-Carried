@@ -58,7 +58,7 @@ internal static class AwardsTab
     public static (CardFace Face, Label Value, Label Detail) AwardCard(Kit k, Award award, float width)
     {
         Color color = RecapTheme.FromHex(award.ColorHex);
-        var face = new CardFace(k, new CardSpec(width, color, Loc.Text(award.Title), Art: RecapTexts.AwardArt(k, award.Title),
+        var face = new CardFace(k, new CardSpec(width, color, Loc.Text(award.Title), Art: RecapTexts.AwardArt(k, award),
             Gem: k.Icon(RecapTexts.EnergyKey(award.IconKey)), GemFace: k.Icon(award.IconKey), Plaque: award.PlayerName));
         float em = face.Em;
         Label value = k.Strong(award.Value, em * 2.8f);

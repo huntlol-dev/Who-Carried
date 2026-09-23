@@ -396,12 +396,18 @@ internal static class DevPreview
                 stats.RecordDebuffPrevented(P(1).NetId, piercingWail, rng.Next(4, 14) * act);
                 stats.RecordCardCreated(P(1).NetId, shiv, rng.Next(2, 6));
                 if (fight % 2 == 0) stats.RecordCardCreated(P(2).NetId, new SourceRef(SourceKind.Card, "SOVEREIGN_BLADE", GameText.Native("cards", "SOVEREIGN_BLADE.title", "SOVEREIGN_BLADE")));
-                // Co-op help. In a solo preview these are gifts to yourself, which don't count: the tab shows its hint.
-                stats.RecordSupport(P(1).NetId, P(0).NetId, SupportKind.Energy, help.Next(0, 2));
-                stats.RecordSupport(P(2).NetId, P(1).NetId, SupportKind.Block, help.Next(0, 12) * act);
-                stats.RecordSupport(P(0).NetId, P(2).NetId, SupportKind.Buffs, help.Next(0, 3));
-                stats.RecordSupport(P(2).NetId, P(0).NetId, SupportKind.Cards, fight % 2);
-                stats.RecordSupport(P(3).NetId, P(1).NetId, SupportKind.Draws, help.Next(0, 3));
+                // Co-op help: everyone gives the next player round a bit of everything, each leaning on one kind so
+                // every support award has a clear winner. In a solo preview these are gifts to yourself, which don't
+                // count: the tab shows its hint.
+                for (int i = 0; i < 4; i++)
+                {
+                    ulong from = P(i).NetId, to = P(i + 1).NetId;
+                    stats.RecordSupport(from, to, SupportKind.Buffs, help.Next(0, i == 0 ? 4 : 2));
+                    stats.RecordSupport(from, to, SupportKind.Energy, help.Next(0, i == 1 ? 3 : 2));
+                    stats.RecordSupport(from, to, SupportKind.Block, help.Next(0, i == 2 ? 12 : 4) * act);
+                    stats.RecordSupport(from, to, SupportKind.Cards, i == 2 ? fight % 2 + help.Next(0, 2) : help.Next(0, 5) / 4);
+                    stats.RecordSupport(from, to, SupportKind.Draws, help.Next(0, i == 3 ? 3 : 2));
+                }
                 stats.EndFight();
             }
         }

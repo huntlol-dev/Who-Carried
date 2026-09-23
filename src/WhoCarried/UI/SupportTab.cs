@@ -56,10 +56,10 @@ internal static class SupportTab
         return grid;
     }
 
-    /// <summary>Each stat's icon, colour, "{0} energy"-style words, and value.</summary>
-    private static List<(Texture2D? Icon, Color Tone, string Words, Func<SupportRow, int> Value)> Stats(Kit k) => new()
+    /// <summary>Each stat's icon, colour, "{0} energy"-style words, and value. Energy wears the player's own gem.</summary>
+    private static List<(Texture2D? Icon, Color Tone, string Words, Func<SupportRow, int> Value)> Stats(Kit k, SupportRow row) => new()
     {
-        (GameArt.Get(GameArt.Energy), RecapTheme.Gold, "WHO_CARRIED.support.energy", r => r.Energy),
+        (k.Icon(RecapTexts.EnergyKey(row.IconKey)) ?? GameArt.Get(GameArt.Energy), RecapTheme.Gold, "WHO_CARRIED.support.energy", r => r.Energy),
         (GameArt.Get(GameArt.Cards), RecapTheme.Text, "WHO_CARRIED.support.cards", r => r.Cards),
         (GameArt.Get(GameArt.Block), RecapTheme.Blocked, "WHO_CARRIED.support.block", r => r.Block),
         (k.Icon(DebuffBuilder.IconPrefix + "STRENGTH_POWER"), RecapTheme.Taken, "WHO_CARRIED.support.buffs", r => r.Buffs),
@@ -90,7 +90,7 @@ internal static class SupportTab
         right.AddChild(facts);
         float icon = compact ? 18 : 30, text = compact ? 13 : 18;
         var numbers = new List<(LiveNumber Number, Func<SupportRow, int> Value)>();
-        foreach ((Texture2D? art, Color tone, string words, Func<SupportRow, int> value) in Stats(k))
+        foreach ((Texture2D? art, Color tone, string words, Func<SupportRow, int> value) in Stats(k, row))
         {
             HBoxContainer fact = k.Row(compact ? 5 : 8);
             if (art != null) fact.AddChild(Kit.Center(k.Pic(art, icon, icon)));
