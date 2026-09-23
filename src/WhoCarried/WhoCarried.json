@@ -3,7 +3,7 @@
   "name": "Who Carried?",
   "author": "huntlol-dev",
   "description": "Everyone's damage, defense and awards when a run ends, or any time with F8 or the podium button on the top bar. Read-only; does not affect gameplay.",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "has_pck": false,
   "has_dll": true,
   "min_game_version": "0.107.1",
