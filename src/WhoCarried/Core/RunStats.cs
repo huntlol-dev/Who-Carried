@@ -2,6 +2,9 @@ using System.Globalization;
 
 namespace WhoCarried.Core;
 
+/// <summary>What one player gave another (see <see cref="RunStats.RecordSupport"/>).</summary>
+public enum SupportKind { Energy, Cards, Block, Buffs, Draws }
+
 public sealed class SourceTotal
 {
     public SourceKind Kind { get; set; }
@@ -68,6 +71,32 @@ public sealed class PlayerTotals
 
     /// <summary>What enemy debuffs on this player cost them, by effect and power.</summary>
     public Dictionary<string, CostTotal> DebuffCosts { get; set; } = new();
+
+    /// <summary>Energy this player gave teammates.</summary>
+    public int EnergyGiven { get; set; }
+
+    /// <summary>Cards this player created into teammates' piles. Also counted in <see cref="CardsCreated"/>.</summary>
+    public int CardsGiven { get; set; }
+
+    /// <summary>Block this player gave teammates, after the game's modifiers.</summary>
+    public int BlockGiven { get; set; }
+
+    /// <summary>Buff stacks (Strength, Dexterity…) this player put on teammates, all powers together.</summary>
+    public int BuffsGiven { get; set; }
+
+    /// <summary>Cards teammates drew because of this player, their own hand draw not included.</summary>
+    public int CardsDrawnForTeam { get; set; }
+
+    /// <summary>How much of one kind of help this player gave teammates.</summary>
+    public int Given(SupportKind kind) => kind switch
+    {
+        SupportKind.Energy => EnergyGiven,
+        SupportKind.Cards => CardsGiven,
+        SupportKind.Block => BlockGiven,
+        SupportKind.Buffs => BuffsGiven,
+        SupportKind.Draws => CardsDrawnForTeam,
+        _ => 0,
+    };
 
     /// <summary>The most HP one hit of this player's removed, and what dealt it.</summary>
     public int BiggestHit { get; set; }
@@ -219,6 +248,23 @@ public sealed class RunStats
     {
         if (count <= 0) return;
         Entry(GetOrAdd(KeyFor(playerId)).CardsCreated, card).Amount += count;
+    }
+
+    /// <summary>
+    /// Something <paramref name="giver"/> gave a teammate. Help a player gives themselves isn't support, so it's ignored.
+    /// </summary>
+    public void RecordSupport(ulong giver, ulong recipient, SupportKind kind, int amount)
+    {
+        if (giver == recipient || amount <= 0) return;
+        PlayerTotals totals = GetOrAdd(KeyFor(giver));
+        switch (kind)
+        {
+            case SupportKind.Energy: totals.EnergyGiven += amount; break;
+            case SupportKind.Cards: totals.CardsGiven += amount; break;
+            case SupportKind.Block: totals.BlockGiven += amount; break;
+            case SupportKind.Buffs: totals.BuffsGiven += amount; break;
+            case SupportKind.Draws: totals.CardsDrawnForTeam += amount; break;
+        }
     }
 
     /// <param name="effect"><see cref="CostTaken"/>, <see cref="CostDealt"/> or <see cref="CostBlock"/>.</param>
