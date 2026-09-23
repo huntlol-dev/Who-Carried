@@ -17,7 +17,7 @@ When a run ends, the recap opens over the victory or defeat screen and deals eve
 - **Defense:** damage taken, blocked and healed, and how close anyone came to dying.
 - **Decks:** everyone's final deck, with the damage each card dealt.
 
-**Save image** renders the whole run as one tall summary card and puts it in the player's Steam screenshots.
+**Export as image** renders the whole run as one tall summary card and puts it in the player's Steam screenshots.
 
 ## Good to know
 
@@ -29,6 +29,7 @@ When a run ends, the recap opens over the victory or defeat screen and deals eve
 - **Hotkey:** open the recap and click the key on the top bar — the one reading **F8 toggles the recap** — then press the key you want. Esc cancels; Delete or Backspace clears it, leaving the podium button. The setting is saved in `settings.json` in the mod's data folder.
 - **Experimental:** some modded effects deal damage with no dealer and no card (Hextech Runes' Burn), which shows as Unknown. `"experimentalEffectSources": true` in `settings.json` credits it to the effect that was running; restart the game after changing it.
 - **Files** live in the game's save folder under `WhoCarried/` (`%APPDATA%\SlayTheSpire2\WhoCarried` on Windows).
+- **Saves look gone?** They aren't deleted. The game keeps modded saves apart from vanilla ones, so progress seems to vanish the first time you play with any mod, not just this one. Vanilla saves are untouched and come back without mods. To bring them into your modded game, use [Import Vanilla Saves](https://steamcommunity.com/sharedfiles/filedetails/?id=3747503308).
 
 ### Steam Deck and Linux
 
