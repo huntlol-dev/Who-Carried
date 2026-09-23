@@ -11,9 +11,11 @@ namespace WhoCarried.Game;
 
 /// <summary>
 /// Which piece of content is running when something happens that nothing else names. This watches the game's
-/// turn-start and turn-end hooks: as a piece of content's hook runs, the live instance is the running effect
-/// (<see cref="EffectScopes"/>). Nothing names a mod: the hooks are found through the game's own model list and base
-/// class. Installed once, when the first run starts, so every mod's content is registered by then.
+/// turn-boundary hooks (<see cref="EffectScopes.IsTurnBoundaryHook"/>): turn starts and ends, the energy reset, block
+/// clearing and before-hand-draw steps of a player's turn, the start of a fight, and orbs' own turn-start and turn-end
+/// triggers. As a piece of content's hook runs, the live instance is the running effect (<see cref="EffectScopes"/>).
+/// Nothing names a mod: the hooks are found through the game's own model list and base classes. Installed once, when
+/// the first run starts, so every mod's content is registered by then.
 /// <list type="bullet">
 /// <item>Always: the kill command pins the effect that started it, so a creature killed outright at the end of a turn
 /// (Zone the Spire's Hallowed, a mod's Doom) is credited to what judged it (<see cref="Tracker.OnDirectKill"/>).</item>
@@ -28,6 +30,9 @@ internal static class EffectSources
 {
     private const BindingFlags Instance = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
+    /// <summary>Where the watched hooks are declared; their own do-nothing versions aren't watched.</summary>
+    private static readonly Type[] HookBases = { typeof(AbstractModel), typeof(OrbModel) };
+
     private static readonly EffectScopes Scopes = new();
     private static bool _tried;
 
@@ -37,7 +42,7 @@ internal static class EffectSources
     /// <summary>The live effect that started the damage command running here; null when off or none was seen.</summary>
     public static AbstractModel? DamageSource => Enabled ? Scopes.DamageSource as AbstractModel : null;
 
-    /// <summary>The content whose turn-start or turn-end hook is running here; null if none is.</summary>
+    /// <summary>The content whose turn-boundary hook is running here; null if none is.</summary>
     public static AbstractModel? Running => Scopes.Effect as AbstractModel;
 
     public static void NewFight() => Scopes.NewFight();
@@ -50,7 +55,7 @@ internal static class EffectSources
 
         var clock = Stopwatch.StartNew();
         var harmony = new Harmony("whocarried.effects");
-        List<MethodInfo> hooks = TurnHooks(Models.Types());
+        List<MethodInfo> hooks = TurnBoundaryHooks(Models.Types());
         int watched = Patch(harmony, hooks, nameof(EnterEffect), nameof(LeaveEffect));
         // The one-creature overload hands its creature to this one.
         MethodInfo? kill = AccessTools.Method(typeof(CreatureCmd), nameof(CreatureCmd.Kill),
@@ -66,15 +71,16 @@ internal static class EffectSources
             Enabled = pinned > 0;
             damage = $"{pinned}/{commands.Count} damage commands{(Enabled ? "" : " (OFF: none patched)")}";
         }
-        Tracker.Note($"effect sources: watching {watched}/{hooks.Count} turn hooks, kill command {(kills ? "on" : "OFF")}, " +
+        Tracker.Note($"effect sources: watching {watched}/{hooks.Count} turn-boundary hooks, kill command {(kills ? "on" : "OFF")}, " +
                      $"{damage}, in {clock.ElapsedMilliseconds} ms");
     }
 
     /// <summary>
-    /// Every turn-start or turn-end hook some content overrides, where it's declared: an override a mod's shared base
-    /// class makes once is one method, whichever content inherits it.
+    /// Every turn-boundary hook some content overrides, where it's declared: an override a mod's shared base class makes
+    /// once is one method, whichever content inherits it. The hooks are the ones every model has, and the ones only orbs
+    /// have (their turn-start and turn-end triggers).
     /// </summary>
-    private static List<MethodInfo> TurnHooks(IEnumerable<Type> types)
+    private static List<MethodInfo> TurnBoundaryHooks(IEnumerable<Type> types)
     {
         var found = new HashSet<MethodInfo>();
         foreach (Type type in types)
@@ -85,8 +91,8 @@ internal static class EffectSources
                 foreach (MethodInfo method in type.GetMethods(Instance))
                 {
                     if (method.IsAbstract || !method.IsVirtual || method.ContainsGenericParameters) continue;
-                    if (method.ReturnType != typeof(Task) || method.DeclaringType == typeof(AbstractModel)) continue;
-                    if (!EffectScopes.IsTurnHook(method.Name) || method.GetBaseDefinition().DeclaringType != typeof(AbstractModel)) continue;
+                    if (method.ReturnType != typeof(Task) || HookBases.Contains(method.DeclaringType)) continue;
+                    if (!EffectScopes.IsTurnBoundaryHook(method.Name) || !HookBases.Contains(method.GetBaseDefinition().DeclaringType)) continue;
                     found.Add(Declared(method));
                 }
             }

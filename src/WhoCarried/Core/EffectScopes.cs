@@ -15,6 +15,9 @@ public sealed class EffectScopes
     private readonly AsyncLocal<Frame?> _effects = new(), _damages = new(), _kills = new();
     private int _fight;
 
+    private static readonly string[] TurnBoundaries =
+        { "TurnStart", "TurnEnd", "EnergyReset", "BlockCleared", "BeforeHandDraw", "BeforeCombatStart" };
+
     public sealed class Frame
     {
         private readonly int _fight;
@@ -47,9 +50,12 @@ public sealed class EffectScopes
     /// <summary>The effect that started the damage operation running here, or null.</summary>
     public object? DamageSource => Active(_damages.Value);
 
-    /// <summary>The hooks worth watching: turn starts and ends, where effects fire on their own with no card or dealer.</summary>
-    public static bool IsTurnHook(string name) =>
-        name.Contains("TurnStart", StringComparison.Ordinal) || name.Contains("TurnEnd", StringComparison.Ordinal);
+    /// <summary>
+    /// The hooks worth watching: the edges of a turn, where effects fire on their own with no card or dealer. Turn
+    /// starts and ends (orbs' too), and the steps a player's turn sets up with (energy reset, block cleared, before the
+    /// hand draw) or a fight starts with.
+    /// </summary>
+    public static bool IsTurnBoundaryHook(string name) => TurnBoundaries.Any(part => name.Contains(part, StringComparison.Ordinal));
 
     public Frame EnterEffect(object effect) => _effects.Value = new Frame(effect, _effects.Value, Fight);
 

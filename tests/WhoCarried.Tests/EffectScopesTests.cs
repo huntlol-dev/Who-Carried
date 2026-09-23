@@ -315,11 +315,22 @@ public static class EffectScopesTests
     });
 
     [Test]
-    public static void OnlyTurnStartAndEndHooksAreWatched()
+    public static void OnlyTurnBoundaryHooksAreWatched()
     {
-        foreach (string hook in new[] { "AfterSideTurnStart", "BeforeSideTurnEnd", "BeforeSideTurnEndVeryEarly", "AfterPlayerTurnStartLate", "AfterSideTurnEndLate" })
-            Check.True(EffectScopes.IsTurnHook(hook), hook);
-        foreach (string hook in new[] { "AfterCardPlayed", "AfterDamageReceived", "AfterTakingExtraTurn", "AfterEnergyReset" })
-            Check.True(!EffectScopes.IsTurnHook(hook), hook);
+        foreach (string hook in new[]
+                 {
+                     "AfterSideTurnStart", "BeforeSideTurnEnd", "BeforeSideTurnEndVeryEarly", "AfterPlayerTurnStartLate",
+                     "AfterSideTurnEndLate", "AfterEnergyReset", "AfterEnergyResetLate", "AfterBlockCleared", "BeforeHandDraw",
+                     "BeforeHandDrawLate", "BeforeCombatStart", "BeforeCombatStartLate", "BeforeTurnEndOrbTrigger",
+                     "AfterTurnStartOrbTrigger",
+                 })
+            Check.True(EffectScopes.IsTurnBoundaryHook(hook), hook);
+        foreach (string hook in new[]
+                 {
+                     "AfterCardPlayed", "AfterDamageReceived", "AfterTakingExtraTurn", "AfterEnergySpent", "AfterModifyingEnergyGain",
+                     "AfterBlockGained", "AfterBlockBroken", "AfterPreventingBlockClear", "AfterModifyingHandDraw", "AfterCardDrawn",
+                     "AfterCombatEnd", "AfterCombatVictory",
+                 })
+            Check.True(!EffectScopes.IsTurnBoundaryHook(hook), hook);
     }
 }
