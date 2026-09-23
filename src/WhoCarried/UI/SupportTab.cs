@@ -5,7 +5,7 @@ using WhoCarried.Localization;
 namespace WhoCarried.UI;
 
 /// <summary>
-/// What players gave their teammates, one card per kind of help: its icon, what it is ("Block given to teammates"), the
+/// What players gave their teammates, one card per kind of help under a "Given to teammates" heading: its icon and name, the
 /// team's total, and a bar per player who gave any, longest first, with the award it won. Kinds nobody gave are left
 /// out. With nothing given (or nobody to give to) it says so instead.
 /// </summary>
@@ -34,16 +34,16 @@ internal static class SupportTab
         return tab;
     }
 
-    /// <summary>One kind of help: its words (full and compact), colour, value, and the award its leader can win.</summary>
-    private sealed record Kind(string Words, string Short, Color Tone, Func<SupportRow, int> Value, string Award);
+    /// <summary>One kind of help: its name, colour, value, and the award its leader can win.</summary>
+    private sealed record Kind(string Words, Color Tone, Func<SupportRow, int> Value, string Award);
 
     private static readonly Kind[] Kinds =
     {
-        new("WHO_CARRIED.support.energy", "WHO_CARRIED.support.energy_short", RecapTheme.Gold, r => r.Energy, AwardBuilder.Battery),
-        new("WHO_CARRIED.support.cards", "WHO_CARRIED.support.cards_short", RecapTheme.Text, r => r.Cards, AwardBuilder.CarePackage),
-        new("WHO_CARRIED.support.block", "WHO_CARRIED.support.block_short", RecapTheme.Blocked, r => r.Block, AwardBuilder.Bodyguard),
-        new("WHO_CARRIED.support.buffs", "WHO_CARRIED.support.buffs_short", RecapTheme.Taken, r => r.Buffs, AwardBuilder.Coach),
-        new("WHO_CARRIED.support.draws", "WHO_CARRIED.support.draws_short", RecapTheme.Teal, r => r.Draws, AwardBuilder.Playmaker),
+        new("WHO_CARRIED.support.energy", RecapTheme.Gold, r => r.Energy, AwardBuilder.Battery),
+        new("WHO_CARRIED.support.cards", RecapTheme.Text, r => r.Cards, AwardBuilder.CarePackage),
+        new("WHO_CARRIED.support.block", RecapTheme.Blocked, r => r.Block, AwardBuilder.Bodyguard),
+        new("WHO_CARRIED.support.buffs", RecapTheme.Taken, r => r.Buffs, AwardBuilder.Coach),
+        new("WHO_CARRIED.support.draws", RecapTheme.Teal, r => r.Draws, AwardBuilder.Playmaker),
     };
 
     /// <summary>The top-ranked player's energy gem, heading the support; the colourless one is a grey orb.</summary>
@@ -59,7 +59,7 @@ internal static class SupportTab
 
     /// <summary>
     /// The cards in a grid, in the order of <see cref="Kinds"/>. Compact (the saved image) drops the award line and uses
-    /// the short words, one row of cards across.
+    /// one row of cards across.
     /// </summary>
     public static Control Cards(Kit k, RecapView view, float width, int columns, Live? live, bool compact = false)
     {
@@ -114,7 +114,7 @@ internal static class SupportTab
         float art = compact ? 20 : 34;
         // The same picture as the kind's award; energy wears the gem of whoever gave the most.
         title.AddChild(Kit.Center(k.Pic(RecapTexts.AwardArt(k, kind.Award, givers[0].IconKey), art, art)));
-        Label name = k.Text(Loc.Text(compact ? kind.Short : kind.Words), compact ? 14 : 22, kind.Tone, true, Ink.Soft);
+        Label name = k.Text(Loc.Text(kind.Words), compact ? 14 : 22, kind.Tone, true, Ink.Soft);
         name.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         name.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
         title.AddChild(Kit.Center(name));
