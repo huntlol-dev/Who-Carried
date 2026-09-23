@@ -75,6 +75,11 @@ internal static class RecapTexts
         AwardBuilder.CardFactory => GameArt.Get(GameArt.Deck),
         AwardBuilder.Unscathed => GameArt.Get(GameArt.Perfect),
         AwardBuilder.PunchingBag => GameArt.Get(GameArt.Skull),
+        AwardBuilder.Battery => GameArt.Get(GameArt.Energy),
+        AwardBuilder.CarePackage => GameArt.Get(GameArt.Cards),
+        AwardBuilder.Bodyguard => GameArt.Get(GameArt.Block),
+        AwardBuilder.Coach => k.Icon(DebuffBuilder.IconPrefix + "STRENGTH_POWER"),
+        AwardBuilder.Playmaker => GameArt.Get(GameArt.DrawPile) ?? GameArt.Get(GameArt.Deck),
         _ => GameArt.Get(GameArt.Trophy),
     };
 

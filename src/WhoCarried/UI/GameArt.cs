@@ -17,7 +17,8 @@ internal static class GameArt
         Timer = "timer", Ascension = "ascension", Heart = "heart", Deck = "deck", Swords = "swords", Trophy = "trophy",
         Cards = "cards", Achievements = "achievements",
         Block = "block", Skull = "skull", Brush = "brush",
-        Dot = "dot", Monster = "monster", Elite = "elite", Boss = "boss", Unknown = "unknown", Perfect = "perfect";
+        Dot = "dot", Monster = "monster", Elite = "elite", Boss = "boss", Unknown = "unknown", Perfect = "perfect",
+        DrawPile = "draw_pile";
 
     private static readonly Dictionary<string, string> Paths = new()
     {
@@ -43,6 +44,7 @@ internal static class GameArt
         [Boss] = Ui + "map/icons/map_burly_monster.tres",
         [Unknown] = Ui + "map/icons/map_unknown.tres",
         [Perfect] = "res://images/ui/game_over_screen/badge_perfect.png",
+        [DrawPile] = "res://images/packed/combat_ui/draw_pile.png",
     };
 
     private static readonly Dictionary<string, Texture2D?> Cache = new();

@@ -12,6 +12,7 @@ When a run ends, the recap opens over the victory or defeat screen and deals eve
 - **Awards:** sixteen titles, one winner each (Heavy hitter, Enabler, Clutch, Protector, Battery, Care package, Bodyguard, Coach, Playmaker, Wall, Siege breaker, Fight leader, Jack of all trades, Card factory, Unscathed, Punching bag), plus the game's own end-of-run badges.
 - **Sources:** every card, relic, power, potion and orb that dealt damage, per player, and the cards each player created.
 - **Debuffs:** who stacked what, the damage Weak and Strength-down kept off the team, and what enemy debuffs cost each player.
+- **Support:** the energy, cards, block, buffs and draws each player gave their teammates.
 - **Timeline:** damage per fight across the run.
 - **Defense:** damage taken, blocked and healed, and how close anyone came to dying.
 - **Decks:** everyone's final deck, with the damage each card dealt.
@@ -53,7 +54,7 @@ To build against another game version's DLLs, pass `-p:GameData=<folder with sts
 |---|---|
 | `src/WhoCarried/Core` | The stats, attribution rules, awards and view models. Plain C#, no game types, unit-tested. |
 | `src/WhoCarried/Game` | Harmony patches on the game's hooks (damage, powers, block, combat start and end, run end) and the glue that turns game events into Core calls. |
-| `src/WhoCarried/UI` | The recap panel, its seven views, the summary image, the top-bar button and controller input, built from the game's own fonts and art at runtime. |
+| `src/WhoCarried/UI` | The recap panel, its eight views, the summary image, the top-bar button and controller input, built from the game's own fonts and art at runtime. |
 | `tests/WhoCarried.Tests` | A small console test runner for Core. |
 | `docs/design` | The specs and plans the mod was built from. |
 

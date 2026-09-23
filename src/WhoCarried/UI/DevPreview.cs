@@ -16,7 +16,7 @@ namespace WhoCarried.UI;
 /// </summary>
 internal static class DevPreview
 {
-    private static readonly string[] TabNames = { "scoreboard", "awards", "sources", "debuffs", "timeline", "defense", "decks" };
+    private static readonly string[] TabNames = { "scoreboard", "awards", "sources", "debuffs", "support", "timeline", "defense", "decks" };
 
     public static void StartIfFlagged(string dataDir)
     {
@@ -203,7 +203,7 @@ internal static class DevPreview
         {
             Tracker.Note($"preview pad: after LB tab {handle.Tabs.CurrentTab} (0 expected), last {PadInput.LastCommand}");
             Shot("preview-13-pad-card.png");
-            handle.Tabs.CurrentTab = 4;
+            handle.Tabs.CurrentTab = 5; // Timeline (Support now sits at 4)
             // Timed from here, not from the start: saving a screenshot takes a noticeable part of a second.
             Later.Run(0.3, () =>
             {
@@ -330,6 +330,7 @@ internal static class DevPreview
         PlayerInfo P(int i) => players[i % players.Count];
         var stats = new RunStats();
         var rng = new Random(7);
+        var help = new Random(11); // its own stream, so the other sample numbers don't change
         SourceRef vulnerable = Debuff("VULNERABLE_POWER", GameText.Native("powers", "VULNERABLE_POWER.title", "VULNERABLE_POWER"));
         SourceRef weak = Debuff("WEAK_POWER", GameText.Native("powers", "WEAK_POWER.title", "WEAK_POWER"));
         SourceRef poison = Debuff("POISON_POWER", GameText.Native("powers", "POISON_POWER.title", "POISON_POWER"));
@@ -395,6 +396,12 @@ internal static class DevPreview
                 stats.RecordDebuffPrevented(P(1).NetId, piercingWail, rng.Next(4, 14) * act);
                 stats.RecordCardCreated(P(1).NetId, shiv, rng.Next(2, 6));
                 if (fight % 2 == 0) stats.RecordCardCreated(P(2).NetId, new SourceRef(SourceKind.Card, "SOVEREIGN_BLADE", GameText.Native("cards", "SOVEREIGN_BLADE.title", "SOVEREIGN_BLADE")));
+                // Co-op help. In a solo preview these are gifts to yourself, which don't count: the tab shows its hint.
+                stats.RecordSupport(P(1).NetId, P(0).NetId, SupportKind.Energy, help.Next(0, 2));
+                stats.RecordSupport(P(2).NetId, P(1).NetId, SupportKind.Block, help.Next(0, 12) * act);
+                stats.RecordSupport(P(0).NetId, P(2).NetId, SupportKind.Buffs, help.Next(0, 3));
+                stats.RecordSupport(P(2).NetId, P(0).NetId, SupportKind.Cards, fight % 2);
+                stats.RecordSupport(P(3).NetId, P(1).NetId, SupportKind.Draws, help.Next(0, 3));
                 stats.EndFight();
             }
         }

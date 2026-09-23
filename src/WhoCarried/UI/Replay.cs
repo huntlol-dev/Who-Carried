@@ -14,7 +14,7 @@ namespace WhoCarried.UI;
 /// </summary>
 internal static class Replay
 {
-    private static readonly string[] Views = { "scoreboard", "awards", "sources", "debuffs", "timeline", "defense", "decks" };
+    private static readonly string[] Views = { "scoreboard", "awards", "sources", "debuffs", "support", "timeline", "defense", "decks" };
     private static readonly Dictionary<string, string?> Titles = new();
 
     public static void StartIfFlagged(string dataDir)

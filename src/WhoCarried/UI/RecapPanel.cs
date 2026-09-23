@@ -19,13 +19,13 @@ internal sealed record PanelHandle(Control Root, TabContainer Tabs, Label Status
 
 /// <summary>
 /// The full-screen recap in the "Dealt" style: the card table, the game's top bar with the result and the run's
-/// numbers, brush-underlined tabs, and seven views that update in place while it's open. Laid out at 1600×900 design
+/// numbers, brush-underlined tabs, and eight views that update in place while it's open. Laid out at 1600×900 design
 /// pixels and scaled to the screen. The dev preview captures the views by index, in this order.
 /// </summary>
 internal static class RecapPanel
 {
     public const float DesignW = 1600, DesignH = 900;
-    private static readonly string[] Views = { "WHO_CARRIED.tab.scoreboard", "WHO_CARRIED.tab.awards", "WHO_CARRIED.tab.sources", "WHO_CARRIED.tab.debuffs", "WHO_CARRIED.tab.timeline", "WHO_CARRIED.tab.defense", "WHO_CARRIED.tab.decks" };
+    private static readonly string[] Views = { "WHO_CARRIED.tab.scoreboard", "WHO_CARRIED.tab.awards", "WHO_CARRIED.tab.sources", "WHO_CARRIED.tab.debuffs", "WHO_CARRIED.tab.support", "WHO_CARRIED.tab.timeline", "WHO_CARRIED.tab.defense", "WHO_CARRIED.tab.decks" };
 
     public static PanelHandle Create(RecapView view, Func<string?, Texture2D?> icons, CardVisuals? cards,
                                      Action onClose, Action<PanelHandle> onSave)
@@ -62,9 +62,10 @@ internal static class RecapPanel
         tabs.AddChild(Safe(k, 1, pads[1], () => AwardsTab.Create(k, view, live)));
         tabs.AddChild(Safe(k, 2, pads[2], () => SourcesTab.Create(k, view, live, pads[2])));
         tabs.AddChild(Safe(k, 3, pads[3], () => DebuffsTab.Create(k, view, live, pads[3])));
-        tabs.AddChild(Safe(k, 4, pads[4], () => TimelineTab.Create(k, view, live, pads[4])));
-        tabs.AddChild(Safe(k, 5, pads[5], () => DefenseTab.Create(k, view, live)));
-        tabs.AddChild(Safe(k, 6, pads[6], () => DecksTab.Create(k, view, cards, live, pads[6])));
+        tabs.AddChild(Safe(k, 4, pads[4], () => SupportTab.Create(k, view, live)));
+        tabs.AddChild(Safe(k, 5, pads[5], () => TimelineTab.Create(k, view, live, pads[5])));
+        tabs.AddChild(Safe(k, 6, pads[6], () => DefenseTab.Create(k, view, live)));
+        tabs.AddChild(Safe(k, 7, pads[7], () => DecksTab.Create(k, view, cards, live, pads[7])));
 
         save.Pressed += Save;
         if (GameCompat.Confirm is StringName confirm) hints.OnButton(save, confirm);
