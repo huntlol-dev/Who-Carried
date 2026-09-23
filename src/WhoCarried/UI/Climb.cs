@@ -14,6 +14,9 @@ internal static class Climb
     /// <summary>Set while the dev preview or a replay takes screenshots, so an idle cursor can't open a readout.</summary>
     public static bool IgnoreHover { get; set; }
 
+    /// <summary>The gap between two players' segments in a stack, in design pixels.</summary>
+    private const float SegmentGap = 2;
+
     /// <param name="width">Design width of the whole strip.</param>
     /// <param name="height">Design height, heading included.</param>
     /// <param name="barMax">Design height of the tallest stack.</param>
@@ -75,12 +78,16 @@ internal static class Climb
                 float y = baseY - 16;
                 if (stack > 0.5f)
                 {
+                    bool bottom = true;
                     foreach (int s in order)
                     {
                         float segment = Value(i, s) / total * stack;
                         if (segment <= 0) continue;
-                        chart.DrawRect(new Rect2(k.V(X(i) - colW / 2, y - segment), k.V(colW, segment)), colors[s]);
+                        // Every segment above the bottom one leaves a gap under it, so two players of one colour don't merge.
+                        float gap = bottom ? 0 : ChartMath.SegmentGap(segment, SegmentGap);
+                        chart.DrawRect(new Rect2(k.V(X(i) - colW / 2, y - segment), k.V(colW, segment - gap)), colors[s]);
                         y -= segment;
+                        bottom = false;
                     }
                     chart.DrawRect(new Rect2(k.V(X(i) - colW / 2, baseY - 16 - stack), k.V(colW, stack)), new Color(0, 0, 0, 0.4f), false, k.U(1));
                     if (i == hovered)

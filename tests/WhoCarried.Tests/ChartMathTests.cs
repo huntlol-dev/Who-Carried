@@ -35,4 +35,14 @@ public static class ChartMathTests
             Check.True(top >= value && top % 4 == 0 && top <= value * 1.34 + 4, $"{value} → {top}");
         }
     }
+
+    [Test]
+    public static void SegmentGapIsFullSizeOnTallSegmentsAndAThirdOnThinOnes()
+    {
+        Check.Near(2, ChartMath.SegmentGap(40, 2), "a tall segment gives the full gap");
+        Check.Near(2, ChartMath.SegmentGap(6, 2), "exactly three gaps tall");
+        Check.Near(1, ChartMath.SegmentGap(3, 2), "a thin one gives a third");
+        Check.Near(0, ChartMath.SegmentGap(0, 2), "nothing gives nothing");
+        Check.Near(0, ChartMath.SegmentGap(-5, 2), "never negative");
+    }
 }

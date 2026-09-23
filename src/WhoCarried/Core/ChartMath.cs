@@ -31,4 +31,10 @@ public static class ChartMath
         }
         return (int)Math.Round(10 * magnitude);
     }
+
+    /// <summary>
+    /// The gap a stacked segment gives up at its bottom edge, so two segments of one colour don't merge: the full
+    /// <paramref name="gap"/>, or a third of a thin segment, so a small share doesn't vanish.
+    /// </summary>
+    public static float SegmentGap(float segment, float gap) => Math.Max(0, Math.Min(gap, segment / 3));
 }
