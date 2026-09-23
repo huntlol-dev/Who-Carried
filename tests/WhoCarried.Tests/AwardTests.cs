@@ -193,4 +193,64 @@ public static class AwardTests
         Check.Equal(65, p.LowestHpMax, "max");
         Check.Equal("PERFECT:gold,KACHING:bronze", string.Join(",", p.Badges!.Select(b => $"{b.Id}:{b.Rarity}")), "badges, rarity lower-cased");
     }
+
+    [Test]
+    public static void EachSupportAwardGoesToItsLeader()
+    {
+        var s = new RunStats();
+        s.RecordSupport(1, 2, SupportKind.Energy, 3);
+        s.RecordSupport(2, 1, SupportKind.Energy, 1);
+        s.RecordSupport(1, 2, SupportKind.Cards, 3);
+        s.RecordSupport(2, 1, SupportKind.Block, 12);
+        s.RecordSupport(2, 1, SupportKind.Buffs, 3);
+        s.RecordSupport(1, 2, SupportKind.Draws, 4);
+        IReadOnlyList<Award> a = AwardBuilder.Build(s, new[] { Alice, Bob }, new Dictionary<ulong, DefenseTotals>());
+        Check.Equal("Alice", Find(a, AwardBuilder.Battery)!.PlayerName, "battery");
+        Check.Equal("3", Find(a, AwardBuilder.Battery)!.Value, "energy given");
+        Check.Equal("energy given to teammates", Find(a, AwardBuilder.Battery)!.Detail, "battery detail");
+        Check.Equal("Alice", Find(a, AwardBuilder.CarePackage)!.PlayerName, "care package");
+        Check.Equal("Bob", Find(a, AwardBuilder.Bodyguard)!.PlayerName, "bodyguard");
+        Check.Equal("12", Find(a, AwardBuilder.Bodyguard)!.Value, "block given");
+        Check.Equal("Bob", Find(a, AwardBuilder.Coach)!.PlayerName, "coach");
+        Check.Equal("Alice", Find(a, AwardBuilder.Playmaker)!.PlayerName, "playmaker");
+    }
+
+    [Test]
+    public static void SupportAwardsNeedARealAmount()
+    {
+        var s = new RunStats();
+        s.RecordSupport(1, 2, SupportKind.Energy, AwardBuilder.MinEnergyGiven - 1);
+        s.RecordSupport(1, 2, SupportKind.Cards, AwardBuilder.MinCardsGiven - 1);
+        s.RecordSupport(1, 2, SupportKind.Block, AwardBuilder.MinBlockGiven - 1);
+        s.RecordSupport(1, 2, SupportKind.Buffs, AwardBuilder.MinBuffsGiven - 1);
+        s.RecordSupport(1, 2, SupportKind.Draws, AwardBuilder.MinDrawsGiven - 1);
+        IReadOnlyList<Award> a = AwardBuilder.Build(s, new[] { Alice, Bob }, new Dictionary<ulong, DefenseTotals>());
+        foreach (string title in new[] { AwardBuilder.Battery, AwardBuilder.CarePackage, AwardBuilder.Bodyguard, AwardBuilder.Coach, AwardBuilder.Playmaker })
+            Check.True(Find(a, title) == null, $"{title} below its minimum");
+    }
+
+    [Test]
+    public static void SoloRunsGetNoSupportAwards()
+    {
+        var s = new RunStats();
+        s.RecordSupport(1, 2, SupportKind.Energy, 9); // a player who isn't in the run
+        IReadOnlyList<Award> a = AwardBuilder.Build(s, new[] { Alice }, new Dictionary<ulong, DefenseTotals>());
+        Check.True(Find(a, AwardBuilder.Battery) == null, "no teammates, no Battery");
+    }
+
+    [Test]
+    public static void SupportAwardsComeStraightAfterProtectorAndTiesGoToTheHigherRank()
+    {
+        var s = new RunStats();
+        s.RecordDebuffPrevented(2, Weak, 12);
+        s.RecordBlocked(1, 80);
+        s.RecordSupport(1, 2, SupportKind.Energy, 5);
+        s.RecordSupport(2, 1, SupportKind.Energy, 5);
+        IReadOnlyList<Award> a = AwardBuilder.Build(s, new[] { Alice, Bob }, new Dictionary<ulong, DefenseTotals>());
+        List<string> order = a.Select(x => x.Title).ToList();
+        Check.True(order.IndexOf(AwardBuilder.Protector) < order.IndexOf(AwardBuilder.Battery), "after Protector");
+        Check.True(order.IndexOf(AwardBuilder.Battery) < order.IndexOf(AwardBuilder.Wall), "before Wall");
+        Check.Equal("Alice", Find(a, AwardBuilder.Battery)!.PlayerName, "a tie goes to the higher-ranked player");
+        Check.Equal(AwardBuilder.Battery, AwardBuilder.Headline(a, 1), "Alice's headline is her support award, not Wall");
+    }
 }

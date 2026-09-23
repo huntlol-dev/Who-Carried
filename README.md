@@ -9,7 +9,7 @@ When a run ends, the recap opens over the victory or defeat screen and deals eve
 ## What it shows
 
 - **Scoreboard:** each player's damage, share of the team's damage, enemy block knocked off, and the bonus damage their Vulnerable set up for teammates. "The climb" stacks every fight of the run along the map.
-- **Awards:** eleven titles, one winner each (Heavy hitter, Enabler, Clutch, Protector, Wall, Siege breaker, Fight leader, Jack of all trades, Card factory, Unscathed, Punching bag), plus the game's own end-of-run badges.
+- **Awards:** sixteen titles, one winner each (Heavy hitter, Enabler, Clutch, Protector, Battery, Care package, Bodyguard, Coach, Playmaker, Wall, Siege breaker, Fight leader, Jack of all trades, Card factory, Unscathed, Punching bag), plus the game's own end-of-run badges.
 - **Sources:** every card, relic, power, potion and orb that dealt damage, per player, and the cards each player created.
 - **Debuffs:** who stacked what, the damage Weak and Strength-down kept off the team, and what enemy debuffs cost each player.
 - **Timeline:** damage per fight across the run.

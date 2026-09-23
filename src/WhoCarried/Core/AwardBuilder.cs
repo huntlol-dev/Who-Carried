@@ -44,9 +44,24 @@ public static class AwardBuilder
     /// <summary>"Jack of all trades" needs at least this many different damage sources.</summary>
     public const int MinSources = 5;
 
+    /// <summary>What a support award needs, so one stray gift doesn't win a title.</summary>
+    public const int MinEnergyGiven = 2, MinCardsGiven = 3, MinBlockGiven = 10, MinBuffsGiven = 3, MinDrawsGiven = 3;
+
     public const string Clutch = "WHO_CARRIED.award.clutch", HeavyHitter = "WHO_CARRIED.award.heavy_hitter", Enabler = "WHO_CARRIED.award.enabler", Protector = "WHO_CARRIED.award.protector",
         Wall = "WHO_CARRIED.award.wall", SiegeBreaker = "WHO_CARRIED.award.siege_breaker", FightLeader = "WHO_CARRIED.award.fight_leader", JackOfAllTrades = "WHO_CARRIED.award.jack_of_all_trades",
-        CardFactory = "WHO_CARRIED.award.card_factory", Unscathed = "WHO_CARRIED.award.unscathed", PunchingBag = "WHO_CARRIED.award.punching_bag";
+        CardFactory = "WHO_CARRIED.award.card_factory", Unscathed = "WHO_CARRIED.award.unscathed", PunchingBag = "WHO_CARRIED.award.punching_bag",
+        Battery = "WHO_CARRIED.award.battery", CarePackage = "WHO_CARRIED.award.care_package", Bodyguard = "WHO_CARRIED.award.bodyguard",
+        Coach = "WHO_CARRIED.award.coach", Playmaker = "WHO_CARRIED.award.playmaker";
+
+    /// <summary>The support awards, in award order: title, what it counts, its minimum, and its detail.</summary>
+    private static readonly (string Title, SupportKind Kind, int Min, string Detail)[] SupportAwards =
+    {
+        (Battery, SupportKind.Energy, MinEnergyGiven, "WHO_CARRIED.award.battery_detail"),
+        (CarePackage, SupportKind.Cards, MinCardsGiven, "WHO_CARRIED.award.care_package_detail"),
+        (Bodyguard, SupportKind.Block, MinBlockGiven, "WHO_CARRIED.award.bodyguard_detail"),
+        (Coach, SupportKind.Buffs, MinBuffsGiven, "WHO_CARRIED.award.coach_detail"),
+        (Playmaker, SupportKind.Draws, MinDrawsGiven, "WHO_CARRIED.award.playmaker_detail"),
+    };
 
     /// <param name="byRank">Players in scoreboard order; ties go to the earlier one.</param>
     public static IReadOnlyList<Award> Build(RunStats stats, IReadOnlyList<PlayerInfo> byRank,
@@ -88,6 +103,13 @@ public static class AwardBuilder
         if (protector != null)
             Give(Protector, protector, Num(Sum(T(protector)!.DebuffPrevented)),
                 Loc.Text("WHO_CARRIED.award.protector_detail", RecapBuilder.JoinAnd(Labels(T(protector)!.DebuffPrevented))));
+
+        // Help given straight to teammates, one award per kind. Before Wall, so a support player's headline is this.
+        foreach ((string title, SupportKind kind, int min, string detail) in SupportAwards)
+        {
+            PlayerInfo? giver = Most(byRank, p => T(p)?.Given(kind) ?? 0);
+            if (giver != null && T(giver)!.Given(kind) >= min) Give(title, giver, Num(T(giver)!.Given(kind)), Loc.Text(detail));
+        }
 
         PlayerInfo? wall = Most(byRank, p => T(p)?.Blocked ?? 0);
         if (wall != null) Give(Wall, wall, Num(T(wall)!.Blocked), Loc.Text("WHO_CARRIED.award.wall_detail"));
