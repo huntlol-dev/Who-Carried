@@ -193,9 +193,13 @@ internal static class GameCompat
 
     private static Func<Player, bool>? FindExecuting()
     {
-        if (AccessTools.Method(typeof(CombatManager), "IsExecutingCardOrPotionEffect", new[] { typeof(Player) }) is not MethodInfo method)
+        if (AccessTools.Method(typeof(CombatManager), "IsExecutingCardOrPotionEffect", new[] { typeof(Player) }) is not MethodInfo method ||
+            method.ReturnType != typeof(bool))
             return null;
-        var call = (Func<CombatManager, Player, bool>)Delegate.CreateDelegate(typeof(Func<CombatManager, Player, bool>), method);
+        // A changed signature leaves this game without the check (the running action's owner stands in), not throwing.
+        Func<CombatManager, Player, bool> call;
+        try { call = (Func<CombatManager, Player, bool>)Delegate.CreateDelegate(typeof(Func<CombatManager, Player, bool>), method); }
+        catch (Exception) { return null; }
         return player => CombatManager.Instance is CombatManager combat && call(combat, player);
     }
 
