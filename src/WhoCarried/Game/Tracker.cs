@@ -306,7 +306,49 @@ internal static class Tracker
         if (creator == null) return; // enemies adding Dazed or Wounds pass no creator
         string id = card.Id.Entry;
         _stats.RecordCardCreated(creator.NetId, new SourceRef(SourceKind.Card, id, GameText.Title(card.TitleLocString, id)));
+        // Made straight into a teammate's piles (Glimpse Beyond's Souls, Largesse): that's a gift too.
+        if (card.Owner is Player owner && owner.NetId != creator.NetId)
+            Support(creator.NetId, owner.NetId, SupportKind.Cards, 1, id);
         Touch();
+    }
+
+    /// <summary>
+    /// Help one player gave another. A missing giver is logged, not guessed; gifts to yourself are dropped (see
+    /// <see cref="RunStats.RecordSupport"/>).
+    /// </summary>
+    private static void Support(ulong? giver, ulong recipient, SupportKind kind, int amount, string source)
+    {
+        if (amount <= 0) return;
+        if (giver is not ulong from)
+        {
+            _log?.Write($"{Where} support: no giver for {amount} {LogReplay.SupportWord(kind)} to {NameOf(recipient)} | {source}");
+            return;
+        }
+        if (from == recipient) return;
+        _stats.RecordSupport(from, recipient, kind, amount);
+        _log?.Write($"{Where} " + LogReplay.SupportLine(NameOf(from), NameOf(recipient), kind, amount, source));
+        Touch();
+    }
+
+    /// <summary>Energy landing on a player, after the game's modifiers.</summary>
+    public static void OnEnergyGained(Player recipient, decimal amount) =>
+        Support(SupportGiver.Find(_run), recipient.NetId, SupportKind.Energy, (int)amount, SupportGiver.Running());
+
+    /// <summary>Block a player or their pet gained, after modifiers: a teammate's card that gave it names the giver.</summary>
+    public static void OnBlockGained(Creature creature, decimal amount, CardModel? cardSource)
+    {
+        if (FactsExtractor.PlayerIdOf(creature) is not ulong recipient) return;
+        Support(SupportGiver.Find(_run, cardSource?.Owner?.NetId), recipient, SupportKind.Block, (int)amount,
+            cardSource?.Id.Entry ?? SupportGiver.Running());
+    }
+
+    /// <summary>A card drawn outside the normal hand draw, credited to the card that made its owner draw.</summary>
+    public static void OnCardDrawn(PlayerChoiceContext? context, CardModel card, bool fromHandDraw)
+    {
+        if (fromHandDraw || card.Owner is not Player recipient) return;
+        CardModel? by = GameCompat.ModelStack(context).FirstOrDefault() as CardModel;
+        Support(SupportGiver.Find(_run, by?.Owner?.NetId), recipient.NetId, SupportKind.Draws, 1,
+            by?.Id.Entry ?? SupportGiver.Running());
     }
 
     /// <summary>
@@ -422,6 +464,11 @@ internal static class Tracker
                                       CardModel? cardSource)
     {
         TrackStrengthLoss(power, amount, applier);
+        // A buff one player put on another (Blaze, Fade, Coordinate): only a player applier counts, so self-buffs and
+        // relic buffs with no applier never reach the log.
+        if (amount > 0 && power.Type == PowerType.Buff && FactsExtractor.PlayerIdOf(power.Owner) is ulong buffed &&
+            FactsExtractor.PlayerIdOf(applier) is ulong buffer)
+            Support(buffer, buffed, SupportKind.Buffs, (int)Math.Round(amount), power.Id.Entry);
         if (amount <= 0 || power.Type != PowerType.Debuff) return;
         Creature? target = power.Owner;
         int stacks = (int)Math.Round(amount);

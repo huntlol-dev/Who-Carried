@@ -92,6 +92,42 @@ internal static class BeforeBlockGainedPatch
     }
 }
 
+/// <summary>After a creature gains block, with the amount after modifiers: where block given to a teammate is counted.</summary>
+[HarmonyPatch(typeof(Hook), nameof(Hook.AfterBlockGained))]
+internal static class AfterBlockGainedPatch
+{
+    private static void Prefix(Creature creature, decimal amount, CardModel? cardSource)
+    {
+        try { Tracker.OnBlockGained(creature, amount, cardSource); }
+        catch (Exception e) { Tracker.LogError("AfterBlockGained", e); }
+    }
+}
+
+/// <summary>
+/// Where energy lands, after the game's modifiers: PlayerCmd.GainEnergy's only way in. Energy given to a teammate is
+/// counted here.
+/// </summary>
+[HarmonyPatch(typeof(PlayerCombatState), nameof(PlayerCombatState.GainEnergy))]
+internal static class GainEnergyPatch
+{
+    private static void Prefix(decimal amount, Player ____player)
+    {
+        try { Tracker.OnEnergyGained(____player, amount); }
+        catch (Exception e) { Tracker.LogError("PlayerCombatState.GainEnergy", e); }
+    }
+}
+
+/// <summary>Every card drawn; the hand draw is flagged. Where draws given to a teammate are counted.</summary>
+[HarmonyPatch(typeof(Hook), nameof(Hook.AfterCardDrawn))]
+internal static class AfterCardDrawnPatch
+{
+    private static void Prefix(PlayerChoiceContext choiceContext, CardModel card, bool fromHandDraw)
+    {
+        try { Tracker.OnCardDrawn(choiceContext, card, fromHandDraw); }
+        catch (Exception e) { Tracker.LogError("AfterCardDrawn", e); }
+    }
+}
+
 /// <summary>Fires for each card created mid-fight (Souls, Shivs, transformed cards) with the player who made it.</summary>
 [HarmonyPatch(typeof(Hook), nameof(Hook.AfterCardGeneratedForCombat))]
 internal static class CardGeneratedPatch

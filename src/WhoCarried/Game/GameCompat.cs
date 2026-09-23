@@ -5,6 +5,7 @@ using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.ControllerInput;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
+using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Logging;
@@ -25,6 +26,8 @@ namespace WhoCarried.Game;
 ///   (altUp/altDown, missing on the public branch), and renamed IsUsingController and GetShortcutKey.
 /// - The context's model stack: only the beta exposes it; both keep it in the same private field, and on both its top
 ///   is LastInvolvedModel.
+/// - Card effects in progress: CombatManager.IsExecutingCardOrPotionEffect, looked up by name; without it the running
+///   action's owner is used.
 /// </summary>
 internal static class GameCompat
 {
@@ -44,6 +47,7 @@ internal static class GameCompat
     private static readonly Lazy<ModifyDamageFn> ModifyDamageImpl = new(FindModifyDamage);
     private static readonly Lazy<Func<NControllerManager, bool>?> ControllerModeImpl = new(FindControllerMode);
     private static readonly Lazy<Func<NInputManager, StringName, Key>?> HotkeyImpl = new(FindHotkey);
+    private static readonly Lazy<Func<Player, bool>?> ExecutingImpl = new(FindExecuting);
     private static readonly FieldInfo? ModelStackField = AccessTools.Field(typeof(PlayerChoiceContext), "_modelStack");
     private static readonly Dictionary<string, string> Forms = new();
 
@@ -61,6 +65,12 @@ internal static class GameCompat
     /// <summary>The models on the context's stack, top first (for the log). Empty if there are none.</summary>
     public static IEnumerable<AbstractModel> ModelStack(PlayerChoiceContext? context) =>
         context != null && ModelStackField?.GetValue(context) is IEnumerable<AbstractModel> stack ? stack : Array.Empty<AbstractModel>();
+
+    /// <summary>Whether a player's card or potion is taking effect right now; null if this game can't say.</summary>
+    public static Func<Player, bool>? ExecutingCardOrPotion => ExecutingImpl.Value;
+
+    /// <summary>The player whose action is running (a card played, a potion used); null if none.</summary>
+    public static ulong? RunningActionOwner() => RunManager.Instance?.ActionExecutor?.CurrentlyRunningAction?.OwnerId;
 
     /// <summary>Whether the game is in controller mode (it switches on the first controller press, back on mouse use).</summary>
     public static bool ControllerMode(NControllerManager? controllers) =>
@@ -96,6 +106,7 @@ internal static class GameCompat
             Probe("controller mode", () => ControllerModeImpl.Value),
             Probe("hotkeys", () => HotkeyImpl.Value),
             ModelStackField == null ? "model stack: MISSING" : "model stack: ok",
+            Probe("card effects", () => ExecutingImpl.Value),
             $"inputs: confirm {Confirm ?? "MISSING"}, stick {StickUp ?? "MISSING"}, scroll {ScrollUp ?? "none"}",
         };
         return string.Join("; ", parts);
@@ -169,6 +180,14 @@ internal static class GameCompat
         return method != null && method.ReturnType == typeof(Key)
             ? (Func<NInputManager, StringName, Key>)Delegate.CreateDelegate(typeof(Func<NInputManager, StringName, Key>), method)
             : null;
+    }
+
+    private static Func<Player, bool>? FindExecuting()
+    {
+        if (AccessTools.Method(typeof(CombatManager), "IsExecutingCardOrPotionEffect", new[] { typeof(Player) }) is not MethodInfo method)
+            return null;
+        var call = (Func<CombatManager, Player, bool>)Delegate.CreateDelegate(typeof(Func<CombatManager, Player, bool>), method);
+        return player => CombatManager.Instance is CombatManager combat && call(combat, player);
     }
 
     /// <summary>Logs which forms this game has (one line), and warns if any is missing.</summary>
