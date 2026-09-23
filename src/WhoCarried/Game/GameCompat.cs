@@ -6,6 +6,7 @@ using MegaCrit.Sts2.Core.ControllerInput;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
+using MegaCrit.Sts2.Core.GameActions;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Logging;
@@ -71,6 +72,14 @@ internal static class GameCompat
 
     /// <summary>The player whose action is running (a card played, a potion used); null if none.</summary>
     public static ulong? RunningActionOwner() => RunManager.Instance?.ActionExecutor?.CurrentlyRunningAction?.OwnerId;
+
+    /// <summary>The id of the card or potion the running action is playing or using; null if there's none, or it's neither.</summary>
+    public static string? RunningActionSource() => RunManager.Instance?.ActionExecutor?.CurrentlyRunningAction switch
+    {
+        PlayCardAction play => play.CardModelId.Entry,
+        UsePotionAction potion => potion.Player.GetPotionAtSlotIndex((int)potion.PotionIndex)?.Id.Entry,
+        _ => null,
+    };
 
     /// <summary>Whether the game is in controller mode (it switches on the first controller press, back on mouse use).</summary>
     public static bool ControllerMode(NControllerManager? controllers) =>

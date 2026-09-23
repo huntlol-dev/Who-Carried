@@ -22,8 +22,13 @@ internal static class SupportGiver
         return SupportCredit.Giver(named, turnEffect, midEffect, actionOwner);
     }
 
-    /// <summary>What was running, for the log: the turn hook's content, or "?".</summary>
-    public static string Running() => EffectSources.Running is AbstractModel effect ? effect.Id.Entry : "?";
+    /// <summary>What was running, for the log: the turn hook's content, the card or potion in play, or "?".</summary>
+    public static string Running()
+    {
+        if (EffectSources.Running is AbstractModel effect) return effect.Id.Entry;
+        try { return GameCompat.RunningActionSource() ?? "?"; }
+        catch (Exception) { return "?"; }
+    }
 
     private static IReadOnlyCollection<ulong>? MidEffect(IRunState? run)
     {

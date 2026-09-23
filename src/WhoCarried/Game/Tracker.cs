@@ -342,13 +342,16 @@ internal static class Tracker
             cardSource?.Id.Entry ?? SupportGiver.Running());
     }
 
-    /// <summary>A card drawn outside the normal hand draw, credited to the card that made its owner draw.</summary>
+    /// <summary>
+    /// A card drawn outside the normal hand draw, credited to whatever's behind it: a card, relic or power (whichever
+    /// the choice context names, pushed or not).
+    /// </summary>
     public static void OnCardDrawn(PlayerChoiceContext? context, CardModel card, bool fromHandDraw)
     {
         if (fromHandDraw || card.Owner is not Player recipient) return;
-        CardModel? by = GameCompat.ModelStack(context).FirstOrDefault() as CardModel;
-        Support(SupportGiver.Find(_run, by?.Owner?.NetId), recipient.NetId, SupportKind.Draws, 1,
-            by?.Id.Entry ?? SupportGiver.Running());
+        SourceCandidate? by = FactsExtractor.StackTop(context);
+        Support(SupportGiver.Find(_run, by?.OwnerId), recipient.NetId, SupportKind.Draws, 1,
+            by?.Source.Id ?? SupportGiver.Running());
     }
 
     /// <summary>
