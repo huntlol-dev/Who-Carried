@@ -1,3 +1,4 @@
+using System.Globalization;
 using Godot;
 using WhoCarried.Core;
 using WhoCarried.Game;
@@ -22,6 +23,28 @@ internal static class TimelineTab
     public static bool PreviewDiagnostics { get; set; }
 
     private const float ChartW = 1488, ChartH = 548;
+
+    /// <summary>
+    /// With two or more players each line ends in its player's name: the room kept for them on the right, their text
+    /// size, and the least space between two of them (design pixels).
+    /// </summary>
+    private const float NameRoom = 150, NameSize = 18, NameGap = 20;
+
+    /// <summary>The chart's right margin: room for the names when there's more than one line.</summary>
+    private static float RightMargin(int lines) => lines > 1 ? 16 + NameRoom : 16;
+
+    /// <summary>The text cut with "…" until it fits <paramref name="maxWidth"/> (screen pixels), whole letters at a time.</summary>
+    private static string Shorten(Font font, string text, int size, float maxWidth)
+    {
+        if (font.GetStringSize(text, HorizontalAlignment.Left, -1, size).X <= maxWidth) return text;
+        int[] starts = StringInfo.ParseCombiningCharacters(text);
+        for (int n = starts.Length - 1; n > 0; n--)
+        {
+            string cut = text[..starts[n]].TrimEnd() + "…";
+            if (font.GetStringSize(cut, HorizontalAlignment.Left, -1, size).X <= maxWidth) return cut;
+        }
+        return "…";
+    }
 
     public static Control Create(Kit k, RecapView view, Live live, PadTab? pad = null)
     {
@@ -77,8 +100,9 @@ internal static class TimelineTab
     public static Control Chart(Kit k, RecapView view, float width, float height, bool interactive, Live? live,
                                 Action<bool>? setVisible = null, PadTab? pad = null)
     {
-        const float left = 58, right = 16, top = 30, bottom = 30, icon = 28;
-        float plotW = width - left - right, plotH = height - top - bottom, baseline = top + plotH;
+        const float left = 58, top = 30, bottom = 30, icon = 28;
+        // plotW changes with the number of lines (see Set): names at the ends need room.
+        float plotW = width - left - RightMargin(view.Timeline.Count), plotH = height - top - bottom, baseline = top + plotH;
         var chart = new Control
         {
             Name = HoverLayerName, CustomMinimumSize = k.V(width, height), Size = k.V(width, height),
@@ -136,6 +160,23 @@ internal static class TimelineTab
                     chart.DrawCircle(points[i], k.U(r), colors[s]);
                 }
             }
+            if (colors.Length > 1 && bold != null)
+            {
+                // Each line ends in its player's name, so lines of close colours can still be told apart.
+                int last = fights - 1;
+                float[] ends = Enumerable.Range(0, colors.Length).Select(s => Y(Value(last, s))).ToArray();
+                float[] placed = EndLabels.Spread(ends, NameGap, top, baseline);
+                float x = X(last) + 14;
+                for (int s = 0; s < colors.Length && s < current.Timeline.Count; s++)
+                {
+                    if (Math.Abs(placed[s] - ends[s]) > 2)
+                        chart.DrawLine(k.V(X(last) + 8, ends[s]), k.V(x - 3, placed[s]), new Color(colors[s], 0.6f), k.U(1.5f));
+                    string name = Shorten(bold, current.Timeline[s].Label, k.F(NameSize), k.U(NameRoom - 20));
+                    Vector2 at = k.V(x, placed[s] + NameSize * 0.35f);
+                    chart.DrawStringOutline(bold, at, name, HorizontalAlignment.Left, -1, k.F(NameSize), k.F(5), RecapTheme.Ink);
+                    chart.DrawString(bold, at, name, HorizontalAlignment.Left, -1, k.F(NameSize), colors[s]);
+                }
+            }
             float pitch = fights > 1 ? plotW / (fights - 1) : plotW;
             float size = Math.Min(icon, pitch - 2);
             for (int i = 0; i < fights; i++)
@@ -187,7 +228,8 @@ internal static class TimelineTab
             float[][] shown = Enumerable.Range(0, fights).Select(i => Enumerable.Range(0, oldSeries).Select(s => Value(i, s)).ToArray()).ToArray();
             float shownTop = Top();
             current = v;
-            colors = v.Timeline.Select(s => RecapTheme.Accent(s.ColorHex)).ToArray();
+            plotW = width - left - RightMargin(v.Timeline.Count);
+            colors =v.Timeline.Select(s => RecapTheme.Accent(s.ColorHex)).ToArray();
             int series = colors.Length, n = v.FightPoints.Count;
             to = Enumerable.Range(0, n).Select(i => v.Timeline.Select(s => (float)s.Values[i]).ToArray()).ToArray();
             from = Enumerable.Range(0, n).Select(i => Enumerable.Range(0, series)
