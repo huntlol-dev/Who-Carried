@@ -47,6 +47,14 @@ public sealed record RunFacts(int Floor, int Ascension, long Seconds, string See
 /// <param name="LowestHp">The lowest HP the player ended a floor on (0 = unknown), with their max HP then.</param>
 public sealed record DefenseTotals(int Taken, int Healed, int LowestHp = 0, int LowestHpMax = 0);
 
+/// <summary>What one player gave their teammates over the run (see <see cref="RunStats.RecordSupport"/>).</summary>
+public sealed record SupportRow(string Label, string ColorHex, string? IconKey, string Character,
+                                int Energy, int Cards, int Block, int Buffs, int Draws)
+{
+    /// <summary>Whether this player gave a teammate anything at all.</summary>
+    public bool Any => Energy + Cards + Block + Buffs + Draws > 0;
+}
+
 public sealed record Highlight(string Label, string Value, string Sub);
 
 /// <summary>One fight on the timeline, in run order.</summary>
@@ -70,10 +78,17 @@ public sealed record RecapView(
     string PreventedNote,
     IReadOnlyList<Award> Awards,
     IReadOnlyList<PlayerBadges>? Badges,
-    RunFacts? Facts = null)
+    RunFacts? Facts = null,
+    IReadOnlyList<SupportRow>? SupportRows = null)
 {
     /// <summary>False while the run is still going: the game hands out badges only when it ends.</summary>
     public bool BadgesKnown => Badges != null;
+
+    /// <summary>What each player gave teammates, in scoreboard order.</summary>
+    public IReadOnlyList<SupportRow> Support => SupportRows ?? Array.Empty<SupportRow>();
+
+    /// <summary>Whether anyone gave a teammate anything. The saved image leaves the Support section out otherwise.</summary>
+    public bool HasSupport => Support.Any(r => r.Any);
 }
 
 /// <summary>Turns counted stats into exactly what the panel and the exported card display. No game or Godot types.</summary>
@@ -153,6 +168,8 @@ public static class RecapBuilder
             })
             .ToList();
 
+        List<SupportRow> support = byDamage.Select(p => Support(p, stats.Get(p.NetId))).ToList();
+
         return new RecapView(header, overview, sources, timeline, fightActs, actStarts, fightPoints, defenseRows,
             Highlights(stats, players, team), victory, DeckBuilder.Build(stats, byDamage, decks),
             DebuffBuilder.Build(stats, byDamage),
@@ -163,7 +180,7 @@ public static class RecapBuilder
             stats.Finished
                 ? byDamage.Select(p => new PlayerBadges(p.NetId, p.Name, p.ColorHex, IconOf(p), badges[p.NetId])).ToList()
                 : null,
-            facts);
+            facts, support);
     }
 
     /// <summary>A player's badges with their names, best rarity first (the game's order within a rarity).</summary>
@@ -292,4 +309,8 @@ public static class RecapBuilder
     private static string Num(int value) => value.ToString("N0", CultureInfo.InvariantCulture);
 
     private static double Fraction(int value, int max) => max <= 0 ? 0 : Math.Clamp((double)value / max, 0, 1);
+
+    private static SupportRow Support(PlayerInfo p, PlayerTotals? t) =>
+        new(p.Name, p.ColorHex, IconOf(p), p.Character, t?.EnergyGiven ?? 0, t?.CardsGiven ?? 0, t?.BlockGiven ?? 0,
+            t?.BuffsGiven ?? 0, t?.CardsDrawnForTeam ?? 0);
 }

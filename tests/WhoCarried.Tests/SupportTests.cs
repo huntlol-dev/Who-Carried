@@ -4,6 +4,10 @@ namespace WhoCarried.Tests;
 
 public static class SupportTests
 {
+    private static readonly PlayerInfo Alice = new(1, "Alice", "Ironclad", "d85a30", "IRONCLAD");
+    private static readonly PlayerInfo Bob = new(2, "Bob", "The Silent", "7fff00", "SILENT");
+    private static readonly IReadOnlyDictionary<ulong, DefenseTotals> NoDefense = new Dictionary<ulong, DefenseTotals>();
+
     [Test]
     public static void SupportCountsForTheGiverOnly()
     {
@@ -72,5 +76,37 @@ public static class SupportTests
         Check.Equal((ulong?)null, SupportCredit.Giver(null, null, nobody, 5), "nobody mid-effect: the action owner isn't asked");
         Check.Equal((ulong?)5, SupportCredit.Giver(null, null, null, 5), "only when the game can't say who's mid-effect");
         Check.Equal((ulong?)null, SupportCredit.Giver(null, null, null, null), "nothing to go on");
+    }
+
+    [Test]
+    public static void SupportRowsFollowTheScoreboard()
+    {
+        var s = new RunStats();
+        s.RecordDamage(2, new SourceRef(SourceKind.Card, "NEUTRALIZE", "Neutralize"), 50);
+        s.RecordDamage(1, new SourceRef(SourceKind.Card, "BASH", "Bash"), 10);
+        s.RecordSupport(1, 2, SupportKind.Energy, 3);
+        s.RecordSupport(1, 2, SupportKind.Block, 20);
+        s.RecordSupport(2, 1, SupportKind.Cards, 2);
+        RecapView v = RecapBuilder.Build(s, new[] { Alice, Bob }, NoDefense, "h");
+        Check.Equal(2, v.Support.Count, "one row per player");
+        Check.Equal("Bob", v.Support[0].Label, "more damage ranks first, as on the scoreboard");
+        Check.Equal(2, v.Support[0].Cards, "Bob's cards");
+        Check.Equal("SILENT", v.Support[0].IconKey, "icon");
+        SupportRow alice = v.Support[1];
+        Check.Equal((3, 0, 20, 0, 0), (alice.Energy, alice.Cards, alice.Block, alice.Buffs, alice.Draws), "Alice's totals");
+        Check.True(v.HasSupport, "someone gave something");
+    }
+
+    [Test]
+    public static void NothingToShowWhenNobodyGaveAnything()
+    {
+        var solo = new RunStats();
+        solo.RecordSupport(1, 1, SupportKind.Energy, 4); // to themselves: not support
+        RecapView one = RecapBuilder.Build(solo, new[] { Alice }, NoDefense, "h");
+        Check.Equal(1, one.Support.Count, "a lone player still has a row");
+        Check.True(!one.HasSupport, "solo: nothing to show");
+
+        RecapView pair = RecapBuilder.Build(new RunStats(), new[] { Alice, Bob }, NoDefense, "h");
+        Check.True(!pair.HasSupport, "co-op with no gifts: nothing to show");
     }
 }
