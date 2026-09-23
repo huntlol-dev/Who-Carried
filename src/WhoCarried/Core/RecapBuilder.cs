@@ -96,6 +96,9 @@ public static class RecapBuilder
         Func<string, string, (string Title, string Description)>? badgeText = null,
         RunFacts? facts = null)
     {
+        // Players sharing a colour (two Ironclads) get shades of it; every view below is built from these.
+        players = PlayerShades.Assign(players);
+
         // "Damage dealt" everywhere is HP removed; block knocked off is its own smaller number.
         Dictionary<ulong, int> dealt = players.ToDictionary(p => p.NetId, p => stats.Get(p.NetId)?.DamageDealt ?? 0);
         int team = dealt.Values.Sum();

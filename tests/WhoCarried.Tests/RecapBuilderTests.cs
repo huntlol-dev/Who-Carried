@@ -143,4 +143,22 @@ public static class RecapBuilderTests
         Check.Equal(new Highlight("Top source", "zap", "80 · Bob"), v.Highlights[1], "top source");
         Check.Equal(new Highlight("Biggest fight", "70", "Hexaghost · Act 2"), v.Highlights[2], "biggest fight");
     }
+
+    [Test]
+    public static void PlayersSharingAColourAreShadedInEveryView()
+    {
+        var alice = new PlayerInfo(1, "Alice", "Ironclad", "d85a30", "IRONCLAD");
+        var bob = new PlayerInfo(2, "Bob", "Ironclad", "d85a30", "IRONCLAD");
+        var s = new RunStats();
+        s.BeginFight(1, 1, "f1"); s.RecordDamage(1, Card("A"), 5); s.RecordDamage(2, Card("A"), 9); s.EndFight();
+        RecapView v = RecapBuilder.Build(s, new[] { alice, bob }, NoDefense, "h");
+        string bobs = v.Overview.Single(r => r.Label == "Bob").ColorHex;
+        Check.True(bobs != "d85a30", "Bob is shaded");
+        Check.Equal("d85a30", v.Overview.Single(r => r.Label == "Alice").ColorHex, "Alice, first to join, keeps the colour");
+        Check.Equal(bobs, v.Timeline.Single(t => t.Label == "Bob").ColorHex, "timeline");
+        Check.Equal(bobs, v.Defense.Single(d => d.Label == "Bob").ColorHex, "defense");
+        Check.Equal(bobs, v.Sources.Single(x => x.PlayerLabel.StartsWith("Bob")).ColorHex, "sources");
+        Check.True(v.Sources.Single(x => x.PlayerLabel.StartsWith("Bob")).Rows.All(r => r.ColorHex == bobs), "source bars");
+        Check.True(v.Awards.Where(a => a.PlayerName == "Bob").All(a => a.ColorHex == bobs), "awards");
+    }
 }
