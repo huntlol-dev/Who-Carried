@@ -138,7 +138,7 @@ internal static class ScoreboardTab
             chips.AddChild(_shareChip);
             (Control blockChip, _block) = Chip(GameArt.Get(GameArt.Block), RecapTheme.Green, "");
             chips.AddChild(blockChip);
-            body.AddChild(Pad(chips, em * 0.5f));
+            body.AddChild(Pad(chips, em * 0.4f));
 
             HBoxContainer bonus = k.Row(em * 0.3f);
             bonus.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
@@ -156,7 +156,7 @@ internal static class ScoreboardTab
                 bonus.AddChild(Kit.Center(_bonusValue));
                 bonus.AddChild(Kit.Center(_bonusText));
             }
-            _bonusLine = Pad(bonus, em * 0.3f);
+            _bonusLine = Pad(bonus, em * 0.25f);
             body.AddChild(_bonusLine);
 
             // Times this player died, under the bonus damage; hidden for a player who never went down.
@@ -165,7 +165,7 @@ internal static class ScoreboardTab
             deaths.AddChild(Kit.Center(k.Pic(GameArt.Get(GameArt.Skull), em * 1.2f, em * 1.2f)));
             _deathsText = k.Text("", em * 0.92f, new Color("e8e2d4"));
             deaths.AddChild(Kit.Center(_deathsText));
-            _deathsLine = Pad(deaths, em * 0.3f);
+            _deathsLine = Pad(deaths, em * 0.25f);
             body.AddChild(_deathsLine);
         }
 
