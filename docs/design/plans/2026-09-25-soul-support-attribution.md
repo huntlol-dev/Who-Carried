@@ -1,6 +1,6 @@
 # Card Creation Support and Soulbound Attribution Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Make generated Souls visible in Support and credit reaction-generated cards and teammate gifts to the verified contributor.
 
@@ -10,7 +10,9 @@
 
 **Spec:** [Card creation in Support and Soulbound attribution](../specs/2026-09-25-soul-support-attribution-design.md). Read both documents before execution.
 
-**Status:** Planning only. No product changes or runtime validation performed by this documentation task. The requested branch contains these documents; pre-existing uncommitted timer edits must not be included in feature commits.
+**Status:** Implementation authorized 2026-09-26 and executed inline. Tasks 1–5 are implemented; automated checks pass. Task 6's live game, screenshot and controller acceptance checks remain pending explicit authorization. Existing timer edits are preserved outside feature commits. See the investigation for evidence and limits.
+
+**Execution notes:** Scope lifecycle coverage uses the existing 19 EffectScopesTests plus the real Harmony harness instead of duplicating a new CardCreationScopeTests file. Generation replay tests live in the focused CardGenerationReplayTests class. The dispatch-order harness simulates the verified game loop; it does not execute a combat. Discovery failure diagnostics are implemented, but forced Harmony patch failure was not injected. Completed checkboxes refer to implementation with these substitutions; live/visual acceptance remains open below.
 
 ## Global Constraints
 
@@ -50,7 +52,7 @@ Before editing, inspect `git status --short`, read applicable guidance and run t
 - Consumes `SourceRef`, `RunStats.RecordCardCreated`, `RunStats.RecordSupport`, `RunStatsStore`.
 - Produces `CardCreationCredit.Resolve(ulong? creator, ulong? recipient, bool observedReaction, ulong? reactionContributor)` returning `ulong?`; `PlayerTotals.CardGifts` as `Dictionary<string, SourceTotal>`; `RunStats.RecordCardGeneration(ulong contributor, ulong? recipient, SourceRef card, int count = 1)` returning void.
 
-- [ ] Add failing policy and counting tests, including this minimal regression:
+- [x] Add failing policy and counting tests, including this minimal regression:
 
 ```csharp
 [Test]
@@ -73,8 +75,8 @@ public static void SoulboundStyleReactionCreditsTheApplier()
 }
 ```
 
-- [ ] Run the CardCreationTests filter and verify failure for the missing API. Add explicit cases for zero/negative count, null recipient, same-label/different-ID cards, an arbitrary modded card ID, and self gifts.
-- [ ] Implement the pure rule and recording method:
+- [x] Run the CardCreationTests filter and verify failure for the missing API. Add explicit cases for zero/negative count, null recipient, same-label/different-ID cards, an arbitrary modded card ID, and self gifts.
+- [x] Implement the pure rule and recording method:
 
 ```csharp
 public static ulong? Resolve(ulong? creator, ulong? recipient,
@@ -98,8 +100,8 @@ public void RecordCardGeneration(ulong contributor, ulong? recipient, SourceRef 
 }
 ```
 
-- [ ] Extend existing save/load tests with an old JSON fixture containing CardsCreated and CardsGiven but no CardGifts. Expect old totals unchanged and an empty detail dictionary. Add new gift, save and reload; expect only that gift in details and old+new in aggregate. Add Card factory/Care package tests using RecordCardGeneration: four created/two given in the example; thresholds retain their current constants; solo creation grants no teammate award.
-- [ ] Run CardCreationTests, SupportTests and AwardTests; commit only these Core/test changes with `feat: record generated card gift details`.
+- [x] Extend existing save/load tests with an old JSON fixture containing CardsCreated and CardsGiven but no CardGifts. Expect old totals unchanged and an empty detail dictionary. Add new gift, save and reload; expect only that gift in details and old+new in aggregate. Add Card factory/Care package tests using RecordCardGeneration: four created/two given in the example; thresholds retain their current constants; solo creation grants no teammate award.
+- [x] Run CardCreationTests, SupportTests and AwardTests; commit only these Core/test changes with `feat: record generated card gift details`.
 
 ## Task 2: Project creation into Support without changing gift semantics
 
@@ -121,8 +123,8 @@ public bool HasCardCreation => Creation.Any(p => p.Cards.Count > 0);
 public bool HasSupportContent => HasSupport || HasCardCreation;
 ```
 
-- [ ] Write failing projection tests. With Alice's five Souls for self and two for Bob, expect Alice's Soul row `(Created: 7, Given: 2)`, Bob's creation list empty, HasCardCreation true and HasSupport true. With only the five self Souls in a solo run, expect HasCardCreation/HasSupportContent true and HasSupport false. Include zero-event run and two card IDs sharing a label.
-- [ ] Run CardCreationTests to confirm failure. Implement player rows in scoreboard order, using `p.NetId` for identity. Use the existing source keys, not localized labels:
+- [x] Write failing projection tests. With Alice's five Souls for self and two for Bob, expect Alice's Soul row `(Created: 7, Given: 2)`, Bob's creation list empty, HasCardCreation true and HasSupport true. With only the five self Souls in a solo run, expect HasCardCreation/HasSupportContent true and HasSupport false. Include zero-event run and two card IDs sharing a label.
+- [x] Run CardCreationTests to confirm failure. Implement player rows in scoreboard order, using `p.NetId` for identity. Use the existing source keys, not localized labels:
 
 ```csharp
 static IReadOnlyList<CreatedCardRow> CreationCards(PlayerTotals? totals) => totals == null
@@ -136,7 +138,7 @@ static IReadOnlyList<CreatedCardRow> CreationCards(PlayerTotals? totals) => tota
         .ToList();
 ```
 
-- [ ] Supply `CreationRows` from RecapBuilder.Build; preserve HasSupport's existing definition and all damage ranks/totals. Add an assertion that previously saved creation totals appear even when gift details are absent. Run CardCreationTests and SupportTests, then the full suite; commit `feat: expose creation rows for support recap`.
+- [x] Supply `CreationRows` from RecapBuilder.Build; preserve HasSupport's existing definition and all damage ranks/totals. Add an assertion that previously saved creation totals appear even when gift details are absent. Run CardCreationTests and SupportTests, then the full suite; commit `feat: expose creation rows for support recap`.
 
 ## Task 3: Observe real generation reactions and wire live attribution
 
@@ -147,9 +149,9 @@ static IReadOnlyList<CreatedCardRow> CreationCards(PlayerTotals? totals) => tota
 - Produces `CardCreationSources.InstallOnce()`, `NewFight()`, `Running` (`AbstractModel?`), and `ContributorOf(AbstractModel effect)` (`ulong?`). A separate scope instance is mandatory.
 - Tracker consumes Running once per global generation callback, computes observedReaction from its presence, then calls CardCreationCredit.Resolve and RecordCardGeneration.
 
-- [ ] Inspect installed `Hook.AfterCardGeneratedForCombat`, `CardPileCmd.AddGeneratedCardsToCombat` overloads and `SoulboundPower` before implementing. Record assembly hashes, callback ordering, exact signatures, and stacking/applier behavior in a concise investigation file under `docs/investigations/2026-09-25-card-creation-attribution.md`. Keep full decompiled sources/binaries in ignored local scratch only. If the ordering differs from the spec, revise the design before coding the observer.
-- [ ] Add a failing integration regression against the installed Harmony/game assemblies: patch actual declaring methods, execute synthetic reaction models without launching the game, and capture original-card versus nested-card observations. Use two distinct player IDs and a TaskCompletionSource to force an await. Require original -> explicit creator; nested recipient-as-creator -> reaction applier. Do not accept hand-calling a helper as proof the Harmony hook works.
-- [ ] Add Core scope tests modeled on EffectScopesTests.Hook. Use a separate EffectScopes object from a simulated damage scope; assert no cross-channel state. Cover nested reactions, two concurrent instances, synchronous throw, faulted/cancelled Task, completion, and NewFight invalidation. Copy the existing scope test helper into the new test class (it is private in the old class).
+- [x] Inspect installed `Hook.AfterCardGeneratedForCombat`, `CardPileCmd.AddGeneratedCardsToCombat` overloads and `SoulboundPower` before implementing. Record assembly hashes, callback ordering, exact signatures, and stacking/applier behavior in a concise investigation file under `docs/investigations/2026-09-25-card-creation-attribution.md`. Keep full decompiled sources/binaries in ignored local scratch only. If the ordering differs from the spec, revise the design before coding the observer.
+- [x] Add a failing integration regression against the installed Harmony/game assemblies: patch actual declaring methods, execute synthetic reaction models without launching the game, and capture original-card versus nested-card observations. Use two distinct player IDs and a TaskCompletionSource to force an await. Require original -> explicit creator; nested recipient-as-creator -> reaction applier. Do not accept hand-calling a helper as proof the Harmony hook works.
+- [x] Add Core scope tests modeled on EffectScopesTests.Hook. Use a separate EffectScopes object from a simulated damage scope; assert no cross-channel state. Cover nested reactions, two concurrent instances, synchronous throw, faulted/cancelled Task, completion, and NewFight invalidation. Copy the existing scope test helper into the new test class (it is private in the old class).
 
 ```csharp
 private static Task Hook(EffectScopes scopes, object effect, Func<Task> body)
@@ -161,7 +163,7 @@ private static Task Hook(EffectScopes scopes, object effect, Func<Task> body)
 }
 ```
 
-- [ ] Implement discovery using EffectSources' declared-method/deduplication pattern, restricted to the exact base `AfterCardGeneratedForCombat` method and its signature. Do not match names alone or patch async MoveNext. Skip no-op base implementations. Instrument entry/exit with:
+- [x] Implement discovery using EffectSources' declared-method/deduplication pattern, restricted to the exact base `AfterCardGeneratedForCombat` method and its signature. Do not match names alone or patch async MoveNext. Skip no-op base implementations. Instrument entry/exit with:
 
 ```csharp
 private static readonly EffectScopes Scopes = new();
@@ -173,8 +175,8 @@ private static void Leave(EffectScopes.Frame? __state, Task? __result) =>
     Scopes.LeaveEffect(__state, __result);
 ```
 
-- [ ] Implement ContributorOf by explicit model types. PowerModel uses only PlayerIdOf(power.Applier); CardModel/RelicModel/PotionModel/OrbModel use their Owner.NetId. Catch missing/incompatible ownership access and return null; never use PowerModel.Owner as a substitute for applier. Install once beside the existing ModEntry EffectSources call, log attempts/successes and bounded errors, and reset the dedicated scope in Tracker.OnRunStarted and OnCombatStart. Add reset in OnCombatEnd and OnRunEnded as well; all scope invalidation is independent of damage tracking.
-- [ ] Replace the body of Tracker.OnCardCreated around this flow, retaining error handling in the existing global patch:
+- [x] Implement ContributorOf by explicit model types. PowerModel uses only PlayerIdOf(power.Applier); CardModel/RelicModel/PotionModel/OrbModel use their Owner.NetId. Catch missing/incompatible ownership access and return null; never use PowerModel.Owner as a substitute for applier. Install once beside the existing ModEntry EffectSources call, log attempts/successes and bounded errors, and reset the dedicated scope in Tracker.OnRunStarted and OnCombatStart. Add reset in OnCombatEnd and OnRunEnded as well; all scope invalidation is independent of damage tracking.
+- [x] Replace the body of Tracker.OnCardCreated around this flow, retaining error handling in the existing global patch:
 
 ```csharp
 AbstractModel? effect = CardCreationSources.Running;
@@ -193,7 +195,7 @@ _stats.RecordCardGeneration(player, recipient, source);
 Touch();
 ```
 
-- [ ] Keep the original global Hook patch as the sole counting point. Remove its old Support(...) call; Task 4 supplies the single replayable log event. Extend the integration harness with direct cross-player creator preservation, absent applier, enemy-generated statuses, inherited shared overrides patched once, discovery/patch failure diagnostics, and later-fight work. Run harness, Core scope tests, and Release build; commit `fix: attribute reaction-generated cards to their contributor`.
+- [x] Keep the original global Hook patch as the sole counting point. Remove its old Support(...) call; Task 4 supplies the single replayable log event. Extend the integration harness with direct cross-player creator preservation, absent applier, enemy-generated statuses, inherited shared overrides patched once, discovery/patch failure diagnostics, and later-fight work. Run harness, Core scope tests, and Release build; commit `fix: attribute reaction-generated cards to their contributor`.
 
 ## Task 4: Log and replay creation without duplicate gifts
 
@@ -204,8 +206,8 @@ Touch();
 - Produces `LogReplay.CardGenerationLine(CardGenerationEvent value)` returning the `card-generation ` prefix plus serialized DTO, without floor/act prefix. Tracker adds its existing Where prefix.
 - Consumes RecordCardGeneration; do not route new card events through legacy RecordSupport a second time.
 
-- [ ] Add failing round-trip tests using two player header lines and one new event. Assert created=1, gift detail=1 and CardsGiven=1. Add one legacy `gave 3 cards` line: expect aggregate=4, recorded detail=1. Include same player names with distinct IDs, Chinese/quotes/pipes in label, null recipient, self creation, malformed JSON, empty ID, unknown version, negative/zero count, unknown contributor/recipient and a log with no creation events.
-- [ ] Implement typed JSON using `[JsonPropertyName]` attributes and add `[JsonSerializable(typeof(CardGenerationEvent))]` to WhoCarriedJson. Provide the formatter:
+- [x] Add failing round-trip tests using two player header lines and one new event. Assert created=1, gift detail=1 and CardsGiven=1. Add one legacy `gave 3 cards` line: expect aggregate=4, recorded detail=1. Include same player names with distinct IDs, Chinese/quotes/pipes in label, null recipient, self creation, malformed JSON, empty ID, unknown version, negative/zero count, unknown contributor/recipient and a log with no creation events.
+- [x] Implement typed JSON using `[JsonPropertyName]` attributes and add `[JsonSerializable(typeof(CardGenerationEvent))]` to WhoCarriedJson. Provide the formatter:
 
 ```csharp
 public static string CardGenerationLine(CardGenerationEvent value) =>
@@ -214,8 +216,8 @@ public static string CardGenerationLine(CardGenerationEvent value) =>
 
 `CardEventJson` is a private static JsonTypeInfo<CardGenerationEvent> from `new WhoCarriedJson(new JsonSerializerOptions { WriteIndented = false }).CardGenerationEvent`. Do not use the default indented serializer context, which would split a log event across lines. Add required System.Text.Json / Serialization.Metadata imports.
 
-- [ ] Match `Where + @"card-generation (.*)$"` before legacy gift processing, deserialize in a JsonException guard, validate a non-null DTO, Version==1, Count>0, non-empty Id and IDs against parsed players. Reject a specified unknown recipient; accept null. Then call RecordCardGeneration with SourceKind.Card and the logged label (fall back to Id if the label is null/empty). Update LogReplay's obsolete comment that creation is never recorded.
-- [ ] Emit one new event after successful live recording; emit no legacy gift line for that event. Unknown attribution uses `card-generation-unresolved` with diagnostic fields and is ignored by replay. Confirm a emitted event round-trips on one line, including escaped newlines in a label. Run ReplayTests and full suite; commit `feat: replay card creation and gifts from structured events`.
+- [x] Match `Where + @"card-generation (.*)$"` before legacy gift processing, deserialize in a JsonException guard, validate a non-null DTO, Version==1, Count>0, non-empty Id and IDs against parsed players. Reject a specified unknown recipient; accept null. Then call RecordCardGeneration with SourceKind.Card and the logged label (fall back to Id if the label is null/empty). Update LogReplay's obsolete comment that creation is never recorded.
+- [x] Emit one new event after successful live recording; emit no legacy gift line for that event. Unknown attribution uses `card-generation-unresolved` with diagnostic fields and is ignored by replay. Confirm a emitted event round-trips on one line, including escaped newlines in a label. Run ReplayTests and full suite; commit `feat: replay card creation and gifts from structured events`.
 
 ## Task 5: Move creation into Support and export it
 
@@ -226,7 +228,7 @@ public static string CardGenerationLine(CardGenerationEvent value) =>
 - Change `SupportTab.Create` to accept optional `PadTab? pad = null`, passing the matching pad entry from RecapPanel exactly as SourcesTab does. Existing `SupportTab.Cards`, HasSupport and gift awards retain their semantics.
 - CreationPanels consumes CreationRow/CreatedCardRow only; row identity uses PlayerId and Key. It does not update stats.
 
-- [ ] Add localization template tests using the following concrete copy, and projection assertions for creation-only co-op/solo, all-empty, and mixed content. Confirm the tests fail before adding keys. Add these to both catalogs:
+- [x] Add localization template tests using the following concrete copy, and projection assertions for creation-only co-op/solo, all-empty, and mixed content. Confirm the tests fail before adding keys. Add these to both catalogs:
 
 | Key suffix under WHO_CARRIED.support | English | Simplified Chinese |
 |---|---|---|
@@ -238,8 +240,8 @@ public static string CardGenerationLine(CardGenerationEvent value) =>
 
 Change WHO_CARRIED.empty.support to the spec's combined empty message and its translation `此处显示生成的卡牌及给予队友的帮助。暂无记录。`. Remove the obsolete support.solo key if no longer referenced; remove sources.created when Sources no longer uses it. Keep key sets identical and avoid unused entries.
 
-- [ ] Implement CreationPanels with one player panel per nonempty creation list, using an existing Kit VBox/Grid pattern, player color/icon/name and a table headed card name / Created / Recorded gifts. All cards remain visible; long labels wrap, counts align, and rows sort as the Core projection supplies. Rebuild only when stable row keys/order change; update numbers live otherwise. Compact mode reduces spacing/fonts using existing summary conventions, without truncating away card types.
-- [ ] Put both sections inside a Support scroll container matching Sources' viewport and PadTab.Scrolls pattern:
+- [x] Implement CreationPanels with one player panel per nonempty creation list, using an existing Kit VBox/Grid pattern, player color/icon/name and a table headed card name / Created / Recorded gifts. All cards remain visible; long labels wrap, counts align, and rows sort as the Core projection supplies. Rebuild only when stable row keys/order change; update numbers live otherwise. Compact mode reduces spacing/fonts using existing summary conventions, without truncating away card types.
+- [x] Put both sections inside a Support scroll container matching Sources' viewport and PadTab.Scrolls pattern:
 
 ```csharp
 creation.Visible = v.HasCardCreation;
@@ -249,9 +251,9 @@ empty.Visible = !v.HasSupportContent;
 ```
 
 Give creation and gifts their own heading/hint; place creation first. Do not place self-creation under the heading Given to teammates. Ensure one compact player column per available width and wrap panels when needed, rather than squeezing four long names into unreadable widths.
-- [ ] Add an independent SummaryCard section guarded by HasCardCreation using CreationPanels.Create(..., compact: true), before the existing gift section guarded by HasSupport. Do not call SupportTab.Cards with zero columns when only creation exists. Let export height grow naturally.
-- [ ] Remove the Sources creation footer and its projection from SourcesView after migrating the old `CreatedCardsFlowIntoSources` test to the Support creation tests. Update positional SourcesView constructors (Kinds shifts into the removed Created argument position). Keep Card factory on PlayerTotals.CardsCreated. Search every CreatedCard/CreatedCards/SourcesView reference before removing obsolete types.
-- [ ] Extend DevPreview with deterministic self Souls, Soulbound-style contributor/gift counts via RecordCardGeneration, a generated non-Soul card, a player with creation but no damage, four players, duplicate labels/different keys and long labels. Run LocalizationTests, CardCreationTests, DamageDealtTests and the Release build. Stage only feature hunks in RecapPanel/DevPreview; their timer edits predate this work. Commit `feat: show card creation and recorded gifts in support`.
+- [x] Add an independent SummaryCard section guarded by HasCardCreation using CreationPanels.Create(..., compact: true), before the existing gift section guarded by HasSupport. Do not call SupportTab.Cards with zero columns when only creation exists. Let export height grow naturally.
+- [x] Remove the Sources creation footer and its projection from SourcesView after migrating the old `CreatedCardsFlowIntoSources` test to the Support creation tests. Update positional SourcesView constructors (Kinds shifts into the removed Created argument position). Keep Card factory on PlayerTotals.CardsCreated. Search every CreatedCard/CreatedCards/SourcesView reference before removing obsolete types.
+- [x] Extend DevPreview with deterministic self Souls, Soulbound-style contributor/gift counts via RecordCardGeneration, a generated non-Soul card, a player with creation but no damage, four players, duplicate labels/different keys and long labels. Run LocalizationTests, CardCreationTests, DamageDealtTests and the Release build. Stage only feature hunks in RecapPanel/DevPreview; their timer edits predate this work. Commit `feat: show card creation and recorded gifts in support`.
 
 ## Task 6: Validate complete behavior and document limits
 
@@ -265,6 +267,6 @@ Give creation and gifts their own heading/hint; place creation first. Do not pla
 
 ## Handoff and completion criteria
 
-Review this spec and plan before implementation; execution method has not been selected. Native execution is a reasonable default for these tightly coupled interfaces, with a final independent review if authorized. No implementation is authorized by this documentation task.
+The user authorized implementation on 2026-09-26. Execution is inline with the Superpowers workflow and a final independent review. No deployment or game interaction has been authorized.
 
 Completion requires the automated and integration checks above, visual evidence, and the authorized in-game Soulbound check. If runtime access is not authorized, report the implementation as awaiting runtime validation rather than claiming the Soulbound fix is proven. Do not merge, publish or deploy as part of planning.

@@ -10,9 +10,9 @@ When a run ends, the recap opens over the victory or defeat screen and deals eve
 
 - **Scoreboard:** each player's damage, share of the team's damage, enemy block knocked off, and the bonus damage their Vulnerable set up for teammates. "The climb" stacks every fight of the run along the map.
 - **Awards:** sixteen titles, one winner each (Heavy hitter, Enabler, Clutch, Protector, Battery, Care package, Bodyguard, Coach, Playmaker, Wall, Siege breaker, Fight leader, Jack of all trades, Card factory, Unscathed, Punching bag), plus the game's own end-of-run badges.
-- **Sources:** every card, relic, power, potion and orb that dealt damage, per player, and the cards each player created.
+- **Sources:** every card, relic, power, potion and orb that dealt damage, per player.
 - **Debuffs:** who stacked what, the damage Weak and Strength-down kept off the team, and what enemy debuffs cost each player.
-- **Support:** the energy, cards, block, buffs and draws each player gave their teammates.
+- **Support:** cards each player created (including Souls), followed by the energy, cards, block, buffs and draws they gave teammates. **Created** includes cards for yourself and teammates; **Recorded gifts** is the teammate subset, already included in Created. Creation appears in solo runs too.
 - **Timeline:** damage per fight across the run.
 - **Defense:** damage taken, blocked and healed, and how close anyone came to dying.
 - **Decks:** everyone's final deck, with the damage each card dealt.
@@ -24,6 +24,7 @@ When a run ends, the recap opens over the victory or defeat screen and deals eve
 - **Client side.** Only one player needs it. The manifest sets `affects_gameplay: false`, so the game doesn't compare it between co-op players, and the mod only reads game state: it never runs game commands, so it can't desync a run.
 - **Modded content.** Nothing is hard-coded per character. Damage is read where the game applies it, so modded characters, cards, powers and summons are credited like vanilla ones. Tested with 10+ custom characters, 5-player lobbies and an extra-act mod.
 - **Fair credit.** Shared Poison and Doom are split by each player's part of the pile, tick by tick. Vulnerable, Weak and Strength-down are credited to whoever applied them, and exact ties take turns.
+- **Generated cards.** Soulbound's extra Souls credit the buff's applier and count as gifts when they go to a teammate. Existing saves retain their old totals; missing historical gift details and old attribution are not reconstructed.
 - **Game versions.** One build runs on both the public branch (v0.107) and the beta (v0.111); `Game/GameCompat.cs` looks up the few game APIs that differ by name.
 - **Controller** support: bumpers switch tabs, the d-pad moves around.
 - **Hotkey:** open the recap and click the key on the top bar — the one reading **F8 toggles the recap** — then press the key you want. Esc cancels; Delete or Backspace clears it, leaving the podium button. The setting is saved in `settings.json` in the mod's data folder.

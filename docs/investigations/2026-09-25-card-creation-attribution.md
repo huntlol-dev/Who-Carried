@@ -37,4 +37,8 @@ The 16:07 snapshot on 2026-09-25 recorded Huntlol 93 Souls and Evening 9, with n
 
 ## Runtime validation still required
 
+Automated results on 2026-09-26: Core 295/295; Harmony harness 20 checks passed; Release build 0 warnings/errors. The Core suite covers contributor selection, exactly-once gifts, old save preservation, duplicate labels/IDs, solo creation, thresholds and structured replay including malformed events and mixed historical/new logs. These results precede final independent review.
+
+Preview flags prepared (not launched): `1 eng creation-only`, `2 eng creation-gifts`, `4 zhs creation-many`, `2 eng creation-empty`, `2 eng creation-live`. Existing preview machinery captures Support, an empty-to-live update, and the exported image. Repeat representative flags with both languages and 1/2/4 players; visually inspect overflow and navigate to the final row.
+
 After explicit user authorization, check actual Soulbound and Glimpse Beyond outputs, normal stacking and removal/reapplication, save/resume, live Support, controller scrolling, English/Chinese layouts for 1/2/4 players, and exported images. Do not equate the standalone Harmony checks with a live gameplay or visual pass.

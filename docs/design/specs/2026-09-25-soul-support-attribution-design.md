@@ -1,7 +1,7 @@
 # Card creation in Support and Soulbound attribution
 
 Date: 2026-09-25. Branch: `codex/soul-support-attribution`.
-Status: proposed implementation design; scope agreed in conversation. Documentation only in this change.
+Status: implemented 2026-09-26; automated validation passed. In-game and visual acceptance remain pending explicit authorization.
 
 ## Intent and success
 

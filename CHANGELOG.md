@@ -2,6 +2,16 @@
 
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format, [semver](https://semver.org/spec/v2.0.0.html) numbers.
 
+## [Unreleased]
+
+### Changed
+
+- Cards created, including Souls, now appear in Support and the exported image, with recorded teammate gifts shown separately. Self-creation is visible in solo runs too.
+
+### Fixed
+
+- Soulbound-generated Souls credit the power's applier instead of its recipient. New creation events preserve that credit during replay; historical saves are not retroactively corrected.
+
 ## [1.2.0] — 2026-09-24
 
 ### Added
