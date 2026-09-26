@@ -6,6 +6,7 @@ namespace WhoCarried.Core;
 [JsonSourceGenerationOptions(WriteIndented = true, UseStringEnumConverter = true)]
 [JsonSerializable(typeof(RunStats))]
 [JsonSerializable(typeof(Settings))]
+[JsonSerializable(typeof(CardGenerationEvent))]
 internal partial class WhoCarriedJson : JsonSerializerContext
 {
 }

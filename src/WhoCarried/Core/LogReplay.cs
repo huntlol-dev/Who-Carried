@@ -1,18 +1,26 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
+using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 
 namespace WhoCarried.Core;
 
 /// <summary>
 /// Rebuilds a run's stats from the events.log the mod wrote while it was played, applying today's rules: block
 /// removed is kept apart from damage dealt, and pet attacks are split by what triggered them. Stats an older log never
-/// recorded (cards created, what enemy debuffs cost, Strength-loss prevention, in-fight HP lows, support given to teammates) stay empty.
+/// recorded (creation in older logs, what enemy debuffs cost, Strength-loss prevention, in-fight HP lows, support given to teammates) stay empty.
 /// </summary>
 public static class LogReplay
 {
     public sealed record Result(RunStats Stats, IReadOnlyList<PlayerInfo> Players, bool? Victory, string RunKey);
 
     private const string Where = @"^\[F(\d+) A(\d+)\] ";
+    private static readonly Regex CardGenerated = new(Where + @"card-generation (.*)$", RegexOptions.Compiled);
+    private static readonly JsonTypeInfo<CardGenerationEvent> CardEventJson =
+        new WhoCarriedJson(new JsonSerializerOptions { WriteIndented = false }).CardGenerationEvent;
+
+    public static string CardGenerationLine(CardGenerationEvent value) =>
+        "card-generation " + JsonSerializer.Serialize(value, CardEventJson);
     // Logs written before the rename start with "Run Recap".
     private static readonly Regex Header = new(@"^(?:Who Carried|Run Recap) v\S+ - run (\S+) started", RegexOptions.Compiled);
     private static readonly Regex Resumed = new(@"^--- resumed run (\S+): \d+ fights restored", RegexOptions.Compiled);
@@ -80,6 +88,19 @@ public static class LogReplay
                 if (players.Any(p => p.NetId == id)) continue; // listed again after a Save & Quit resume
                 players.Add(new PlayerInfo(id, m.Groups[2].Value, m.Groups[3].Value, m.Groups[4].Value.ToLowerInvariant()));
                 byName[m.Groups[2].Value] = id;
+            }
+            else if ((m = CardGenerated.Match(line)).Success)
+            {
+                try
+                {
+                    CardGenerationEvent? e = JsonSerializer.Deserialize(m.Groups[3].Value, CardEventJson);
+                    if (e == null || e.Version != 1 || e.Count <= 0 || string.IsNullOrWhiteSpace(e.Id) ||
+                        !players.Any(p => p.NetId == e.Contributor) ||
+                        (e.Recipient is ulong recipient && !players.Any(p => p.NetId == recipient))) continue;
+                    stats.RecordCardGeneration(e.Contributor, e.Recipient,
+                        new SourceRef(SourceKind.Card, e.Id, string.IsNullOrEmpty(e.Label) ? e.Id : e.Label), e.Count);
+                }
+                catch (JsonException) { /* A malformed or newer event must not discard the rest of the run. */ }
             }
             else if ((m = FightStart.Match(line)).Success)
             {

@@ -316,7 +316,13 @@ internal static class Tracker
             return;
         }
         string id = card.Id.Entry;
-        _stats.RecordCardGeneration(player, recipient, new SourceRef(SourceKind.Card, id, GameText.Title(card.TitleLocString, id)));
+        string label = GameText.Title(card.TitleLocString, id);
+        _stats.RecordCardGeneration(player, recipient, new SourceRef(SourceKind.Card, id, label));
+        _log?.Write($"{Where} " + LogReplay.CardGenerationLine(new CardGenerationEvent
+        {
+            Version = 1, Contributor = player, Recipient = recipient, Id = id, Label = label,
+            Count = 1, Effect = effect?.Id.Entry,
+        }));
         Touch();
     }
 
