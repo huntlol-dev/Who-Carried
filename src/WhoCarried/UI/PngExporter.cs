@@ -1,4 +1,5 @@
 using Godot;
+using WhoCarried.Core;
 using WhoCarried.Game;
 
 namespace WhoCarried.UI;
@@ -45,7 +46,7 @@ internal static class PngExporter
     {
         var viewport = new SubViewport
         {
-            Size = new Vector2I(width, 4096),
+            Size = new Vector2I(width, ExportLayout.TileHeight),
             TransparentBg = true,
             GuiDisableInput = true,
             RenderTargetUpdateMode = SubViewport.UpdateMode.Always,
@@ -53,28 +54,77 @@ internal static class PngExporter
         viewport.AddChild(content);
         ((SceneTree)Engine.GetMainLoop()).Root.AddChild(viewport);
 
-        // Frame 1: layout runs and gives us the content height. Frame 2: render at that height, then read back.
+        // Let layout settle, then render bounded slices. The CPU image keeps the full page even when it
+        // exceeds the GPU viewport size; otherwise a long creation list silently cuts off the page's end.
         Later.Run(0.15, () =>
         {
-            int height = Mathf.CeilToInt(Math.Max(content.Size.Y, content.GetCombinedMinimumSize().Y));
-            viewport.Size = new Vector2I(width, Math.Clamp(height, 1, 8192));
-            Later.Run(0.15, () =>
+            Image? combined = null;
+            ExportLayout.Slice[] slices;
+            try
             {
-                Image? image = null;
-                string? error = null;
-                try
+                int height = Math.Max(1, Mathf.CeilToInt(Math.Max(content.Size.Y, content.GetCombinedMinimumSize().Y)));
+                slices = ExportLayout.Slices(height).ToArray();
+                if (slices.Length > 1)
                 {
-                    image = viewport.GetTexture().GetImage();
-                    if (image == null) error = "no image";
+                    combined = Image.CreateEmpty(width, height, false, Image.Format.Rgba8);
+                    if (combined.GetWidth() != width || combined.GetHeight() != height)
+                        throw new InvalidOperationException("Could not allocate the complete export image");
                 }
-                catch (Exception e)
-                {
-                    error = e.Message;
-                    Tracker.LogError("export", e);
-                }
+                Capture(0);
+            }
+            catch (Exception e) { Fail(e); }
+
+            void Fail(Exception e)
+            {
+                combined?.Dispose();
+                combined = null;
+                Tracker.LogError("export", e);
                 viewport.QueueFree();
-                onDone(image, error);
-            });
+                onDone(null, e.Message);
+            }
+
+            void Capture(int index)
+            {
+                ExportLayout.Slice slice = slices[index];
+                viewport.Size = new Vector2I(width, slice.Height);
+                content.Position = new Vector2(0, -slice.Offset);
+                Later.Run(0.15, () =>
+                {
+                    Image? tile = null;
+                    Image? result = null;
+                    try
+                    {
+                        tile = viewport.GetTexture().GetImage();
+                        if (tile == null || tile.GetWidth() != width || tile.GetHeight() != slice.Height)
+                            throw new InvalidOperationException("Incomplete export slice");
+                        if (combined == null)
+                        {
+                            result = tile;
+                            tile = null;
+                        }
+                        else
+                        {
+                            if (tile.GetFormat() != Image.Format.Rgba8) tile.Convert(Image.Format.Rgba8);
+                            combined.BlitRect(tile, new Rect2I(0, 0, width, slice.Height), new Vector2I(0, slice.Offset));
+                            tile.Dispose();
+                            tile = null;
+                            if (index + 1 < slices.Length) Capture(index + 1);
+                            else
+                            {
+                                result = combined;
+                                combined = null;
+                            }
+                        }
+                    }
+                    catch (Exception e) { tile?.Dispose(); Fail(e); return; }
+                    // Ownership passes to the caller. Its callback cannot turn a successful render into a second callback.
+                    if (result != null)
+                    {
+                        viewport.QueueFree();
+                        onDone(result, null);
+                    }
+                });
+            }
         });
     }
 }

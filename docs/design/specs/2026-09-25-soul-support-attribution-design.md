@@ -39,6 +39,8 @@ Creation appears in solo runs too. Self-creation never enables Care package or a
 
 Move the creation list out of Sources. Keep Sources about damage. The exported image includes the same two sections independently, with all recorded card types and adaptive height. The Support tab must scroll when both sections or many card types exceed the viewport; controller scrolling must remain available. Both sections update live, including the first event after opening the panel.
 
+Review refinement (2026-09-26): the existing 8192-pixel export cap would crop long creation lists. Export the complete page by rendering viewport-sized slices and stitching them into one full-height image; report an allocation/rendering failure rather than returning a cropped image as success.
+
 Card factory continues using the existing CardsCreated totals, now with corrected contributors for new Soulbound events. Care package continues using CardsGiven and its existing threshold. No new award, damage contribution, draw credit, or numerical valuation of a Soul is introduced.
 
 ## Counting contract

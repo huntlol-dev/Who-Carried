@@ -11,6 +11,7 @@
 ### Fixed
 
 - Soulbound-generated Souls credit the power's applier instead of its recipient. New creation events preserve that credit during replay; historical saves are not retroactively corrected.
+- Tall exported summaries retain their lower sections instead of being cut off at 8192 pixels.
 
 ## [1.2.0] — 2026-09-24
 

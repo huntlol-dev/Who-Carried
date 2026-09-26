@@ -26,6 +26,11 @@ internal static class CreationPreview
                 stats.RecordCardGeneration(from, to, new SourceRef(SourceKind.Card, "PREVIEW-" + i,
                     i < 2 ? "Twin / 同名卡牌" : "A generated card with a deliberately long name / 一张名称很长的生成卡牌 " + i), i + 1);
         }
+        if (scenario == "creation-tall")
+            foreach (PlayerInfo player in players)
+                for (int i = 0; i < 128; i++)
+                    stats.RecordCardGeneration(player.NetId, to, new SourceRef(SourceKind.Card, "TALL-" + i,
+                        "Generated card with a long label / 名称很长的生成卡牌 " + i), i + 1);
         var built = RecapBuilder.Build(stats, players, new Dictionary<ulong, DefenseTotals>(), view.Header);
         return view with { CreationRows = built.Creation, SupportRows = built.Support, Overview = built.Overview };
     }
