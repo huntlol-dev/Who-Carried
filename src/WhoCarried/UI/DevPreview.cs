@@ -79,6 +79,11 @@ internal static class DevPreview
             CheckTimer(dataDir, sample);
             return;
         }
+        if (wanted == "close")
+        {
+            CheckCloseKey(dataDir, sample);
+            return;
+        }
         if (wanted == "steam")
         {
             CheckSteam(dataDir, sample);
@@ -355,6 +360,93 @@ internal static class DevPreview
                 done();
             });
         });
+    }
+
+    /// <summary>
+    /// "close" in the flag: in English and then Chinese, hovers the hotkey cap and the close key's cap with a pushed
+    /// mouse, requires both to light gold the same way, then clicks the close key's cap and requires the recap to close.
+    /// Saves preview-close-{language}.png with the Esc cap hovered. The game's language is put back afterwards.
+    /// </summary>
+    private static async void CheckCloseKey(string dataDir, Sample sample)
+    {
+        var tree = (SceneTree)Engine.GetMainLoop();
+        string original = LocManager.Instance.Language;
+        async Task Frames(int count)
+        {
+            for (int i = 0; i < count; i++) await tree.ToSignal(tree, SceneTree.SignalName.ProcessFrame);
+        }
+        void Push(Viewport viewport, InputEvent input) => viewport.PushInput(input, inLocalCoords: true);
+        void Move(Viewport viewport, Vector2 at) =>
+            Push(viewport, new InputEventMouseMotion { Position = at, GlobalPosition = at });
+        // Gold text pixels inside the cap: its idle text is pale or faint, never gold.
+        int GoldPixels(Control cap)
+        {
+            Image screen = tree.Root.GetTexture().GetImage();
+            // The screenshot is in window pixels; the cap's rect is in the scaled canvas.
+            Transform2D toScreen = tree.Root.GetFinalTransform() * cap.GetGlobalTransformWithCanvas();
+            Vector2 from = toScreen * Vector2.Zero, to = toScreen * cap.Size;
+            int gold = 0;
+            for (int y = Math.Max(0, (int)from.Y); y < Math.Min(screen.GetHeight(), (int)to.Y); y++)
+                for (int x = Math.Max(0, (int)from.X); x < Math.Min(screen.GetWidth(), (int)to.X); x++)
+                {
+                    Color c = screen.GetPixel(x, y);
+                    if (Math.Abs(c.R - RecapTheme.Gold.R) < 0.12f && Math.Abs(c.G - RecapTheme.Gold.G) < 0.12f
+                        && Math.Abs(c.B - RecapTheme.Gold.B) < 0.15f) gold++;
+                }
+            return gold;
+        }
+        async Task<(bool Hovered, int Idle, int Lit)> Hover(Control cap, Vector2 away)
+        {
+            Viewport viewport = cap.GetViewport();
+            Move(viewport, away);
+            await Frames(3);
+            int idle = GoldPixels(cap);
+            Move(viewport, cap.GetGlobalRect().GetCenter());
+            await Frames(3);
+            bool hovered = viewport.GuiGetHoveredControl() == cap && ((BaseButton)cap).GetDrawMode() == BaseButton.DrawMode.Hover;
+            return (hovered, idle, GoldPixels(cap));
+        }
+
+        bool passed = true;
+        try
+        {
+            foreach (string language in new[] { "eng", "zhs" })
+            {
+                LocManager.Instance.SetLanguage(language);
+                PanelHandle handle = RecapUi.ShowView(sample.View, sample.Icons, new CardVisuals(sample.CardFor));
+                await Frames(10);
+                if (handle.Root.FindChild("RecapCloseKey", true, false) is not Button closeKey)
+                    throw new InvalidOperationException($"{language}: no close key cap (the game's cancel key couldn't be read)");
+                Vector2 away = handle.Tabs.GetGlobalRect().GetCenter();
+                (bool hotkeyHovered, int hotkeyIdle, int hotkeyLit) = await Hover(handle.Hotkey.Cap, away);
+                (bool closeHovered, int closeIdle, int closeLit) = await Hover(closeKey, away);
+                tree.Root.GetTexture().GetImage().SavePng(Path.Combine(dataDir, $"preview-close-{language}.png"));
+                bool lit = closeHovered && closeLit > closeIdle + 20;
+                Tracker.Note($"close preview {language}: hotkey cap '{handle.Hotkey.Cap.Text}' hovered {hotkeyHovered} gold {hotkeyIdle}->{hotkeyLit}; " +
+                             $"close cap '{closeKey.Text}' at {closeKey.GetGlobalRect()} hovered {closeHovered} gold {closeIdle}->{closeLit}");
+
+                Vector2 at = closeKey.GetGlobalRect().GetCenter();
+                Push(closeKey.GetViewport(), new InputEventMouseButton { Position = at, GlobalPosition = at, ButtonIndex = MouseButton.Left, Pressed = true });
+                Push(closeKey.GetViewport(), new InputEventMouseButton { Position = at, GlobalPosition = at, ButtonIndex = MouseButton.Left, Pressed = false });
+                await Frames(5);
+                bool closed = RecapUi.Open == null;
+                Tracker.Note($"close preview {language}: lights on hover {lit}, click closes {closed}");
+                passed &= lit && closed;
+                if (RecapUi.Open != null) RecapUi.Hide();
+                await Frames(5);
+            }
+        }
+        catch (Exception e)
+        {
+            passed = false;
+            Tracker.LogError("close preview", e);
+        }
+        finally
+        {
+            LocManager.Instance.SetLanguage(original);
+            if (RecapUi.Open != null) RecapUi.Hide();
+        }
+        Tracker.Note($"close preview {(passed ? "PASS" : "FAIL")}");
     }
 
     /// <summary>

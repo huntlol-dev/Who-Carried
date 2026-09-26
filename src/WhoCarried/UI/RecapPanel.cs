@@ -169,7 +169,8 @@ internal static class RecapPanel
         row.AddChild(Kit.Center(status));
 
         // Close is a word, not a stone: it is the one control nobody hunts for, and the key beside it already does the
-        // job. The cap and the glyph are the same hint for two devices — PadHints shows exactly one of them.
+        // job. The cap and the glyph are the same hint for two devices — PadHints shows exactly one of them. The cap
+        // is a button like the hotkey's: clicking it closes too, since that is what it reads as.
         HBoxContainer closing = k.Row(9);
         TextureRect closeGlyph = k.Pic(null, 26, 26);
         closeGlyph.Visible = false;
@@ -178,7 +179,8 @@ internal static class RecapPanel
         if (CloseKeyName() is string closeKey)
         {
             Button closeCap = HewnStone.Cap(k, closeKey);
-            closeCap.MouseFilter = Control.MouseFilterEnum.Ignore;
+            closeCap.Name = "RecapCloseKey";
+            closeCap.Pressed += onClose;
             hints.MouseOnly(closeCap);
             closing.AddChild(Kit.Center(closeCap));
         }
