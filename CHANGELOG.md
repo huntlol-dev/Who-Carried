@@ -13,6 +13,7 @@
 
 - Cards created, including Souls, now appear in Support and the exported image, with recorded teammate gifts shown separately. Self-creation is visible in solo runs too.
 - The Esc key beside Close on the recap's top bar can be clicked to close it, and lights gold on hover like the hotkey's key.
+- The damage number on every scoreboard card sits at the same height, whether or not the player has bonus damage. It's a little smaller, with room above it, so it no longer crowds the top of its box or spills over it in Chinese.
 
 ### Fixed
 

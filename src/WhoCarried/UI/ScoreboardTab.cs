@@ -126,8 +126,9 @@ internal static class ScoreboardTab
             float em = Face.Em;
             VBoxContainer body = Face.Body;
 
-            _number = new LiveNumber(k.Strong("", em * 3.6f), row.Value, tight: true, maxWidth: k.U(width * 0.76f), minSize: k.F(em * 2));
-            body.AddChild(Centered(_number.Control));
+            _number = new LiveNumber(k.Strong("", em * 3.2f), row.Value, tight: true, maxWidth: k.U(width * 0.76f), minSize: k.F(em * 2));
+            // Room above the number: the lines below carry their font's space under the text, so a centred block sits high.
+            body.AddChild(Pad(_number.Control, em * 0.6f));
             Label caption = k.Caps(Loc.Text("WHO_CARRIED.stat.damage"), em * 0.72f, RecapTheme.Caption, em * 0.16f);
             caption.HorizontalAlignment = HorizontalAlignment.Center;
             body.AddChild(Pad(caption, em * 0.35f));
@@ -182,13 +183,13 @@ internal static class ScoreboardTab
                 Award? hitter = view.Awards.FirstOrDefault(a => a.Title == AwardBuilder.HeavyHitter);
                 _bonusText.Text = Loc.Text("WHO_CARRIED.stat.biggest_hit_amount", hitter?.Value ?? "");
                 _bonusValue.Text = "";
-                _bonusLine.Visible = hitter != null;
+                Hold(_bonusLine, hitter != null);
             }
             else
             {
                 _bonusValue.Text = "";
                 _bonusText.Text = Loc.Text("WHO_CARRIED.stat.bonus_amount", Kit.Num(row.Bonus));
-                _bonusLine.Visible = row.Bonus > 0;
+                Hold(_bonusLine, row.Bonus > 0);
             }
             Face.SetLeader(rank == 0);
         }
@@ -255,11 +256,8 @@ internal static class ScoreboardTab
             return margin;
         }
 
-        private static Control Centered(Control child)
-        {
-            child.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
-            return child;
-        }
+        /// <summary>Shows or hides a line but keeps its room, so every card's number sits at the same height.</summary>
+        private static void Hold(Control line, bool shown) => line.Modulate = shown ? Colors.White : Colors.Transparent;
     }
 
     /// <summary>Each player's top few damage sources with their art, on one shared scale.</summary>
