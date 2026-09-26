@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../../../local.props" Condition="Exists('../../../local.props')" />
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>WhoCarried.CardCreationChecks</AssemblyName>
+    <GameData Condition="'$(GameData)' == ''">$(GameDir)/data_sts2_windows_x86_64</GameData>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../../src/WhoCarried/WhoCarried.csproj" />
+    <Reference Include="sts2" HintPath="$(GameData)/sts2.dll" />
+    <Reference Include="GodotSharp" HintPath="$(GameData)/GodotSharp.dll" />
+    <Reference Include="0Harmony" HintPath="$(GameData)/0Harmony.dll" />
+  </ItemGroup>
+</Project>

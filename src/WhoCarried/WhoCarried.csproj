@@ -22,6 +22,7 @@
     <Error Text="Can't find the game's DLLs in '$(GameData)'. Set GameDir in local.props (copy local.props.example) or pass -p:GameDir=&lt;your Slay the Spire 2 folder&gt;." />
   </Target>
   <ItemGroup>
+    <InternalsVisibleTo Include="WhoCarried.CardCreationChecks" />
     <Reference Include="sts2">
       <HintPath>$(GameData)\sts2.dll</HintPath>
       <Private>false</Private>

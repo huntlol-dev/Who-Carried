@@ -67,6 +67,8 @@ public static class ModEntry
             // Once every mod's content is registered; after the run's log starts, so its summary lands in it.
             try { EffectSources.InstallOnce(Tracker.DataDir); }
             catch (Exception e) { Tracker.LogError("effect sources", e); }
+            try { CardCreationSources.InstallOnce(); }
+            catch (Exception e) { Tracker.LogError("card creation sources", e); }
         };
 
         RecapUi.Install();

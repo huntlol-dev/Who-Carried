@@ -75,6 +75,7 @@ internal static class Tracker
 
     public static void OnRunStarted(IRunState run)
     {
+        CardCreationSources.NewFight();
         _run = run;
         string key = GameReader.RunKey(run);
         bool loaded = _origin.TakeLoadedFromSave(GameReader.ReloadCount());
@@ -104,6 +105,7 @@ internal static class Tracker
         _run ??= run;
         Fight.Reset();
         EffectSources.NewFight();
+        CardCreationSources.NewFight();
         string label = GameReader.EncounterLabel(combat);
         string room = GameReader.RoomType(run);
         _stats.BeginFight(run.CurrentActIndex + 1, run.TotalFloor, label, room);
@@ -303,12 +305,18 @@ internal static class Tracker
     /// <summary>A card created mid-fight (Souls, Shivs…), credited to the player who made it.</summary>
     public static void OnCardCreated(CardModel card, Player? creator)
     {
-        if (creator == null) return; // enemies adding Dazed or Wounds pass no creator
+        AbstractModel? effect = CardCreationSources.Running;
+        ulong? recipient = card.Owner?.NetId;
+        ulong? contributor = CardCreationCredit.Resolve(creator?.NetId, recipient,
+            effect != null, effect == null ? null : CardCreationSources.ContributorOf(effect));
+        if (contributor is not ulong player)
+        {
+            _log?.Write($"{Where} card-generation-unresolved creator={creator?.NetId} recipient={recipient} " +
+                $"card={card.Id.Entry} effect={effect?.Id.Entry ?? "?"}");
+            return;
+        }
         string id = card.Id.Entry;
-        _stats.RecordCardCreated(creator.NetId, new SourceRef(SourceKind.Card, id, GameText.Title(card.TitleLocString, id)));
-        // Made straight into a teammate's piles (Glimpse Beyond's Souls, Largesse): that's a gift too.
-        if (card.Owner is Player owner && owner.NetId != creator.NetId)
-            Support(creator.NetId, owner.NetId, SupportKind.Cards, 1, id);
+        _stats.RecordCardGeneration(player, recipient, new SourceRef(SourceKind.Card, id, GameText.Title(card.TitleLocString, id)));
         Touch();
     }
 
@@ -577,6 +585,7 @@ internal static class Tracker
 
     public static void OnCombatEnd(IRunState run)
     {
+        CardCreationSources.NewFight();
         CommitFightLows();
         Fight.Reset();
         _stats.EndFight();
@@ -588,6 +597,7 @@ internal static class Tracker
     /// <param name="saved">The run as the game just saved it; the game works out everyone's badges from it.</param>
     public static void OnRunEnded(bool isVictory, SerializableRun? saved)
     {
+        CardCreationSources.NewFight();
         // Heart of the Spire ends a won run a second time as a defeat; the game's own history keeps the win.
         if (_stats.Finished && _stats.Victory == true && !isVictory)
         {
