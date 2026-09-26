@@ -619,6 +619,9 @@ internal static class DevPreview
 
         // A close call for "Clutch", and the game's badges as a finished run would have them.
         stats.RecordHp(P(2).NetId, 6, 72);
+        // Co-op deaths: two for one player, one for another, none for the rest (so both card layouts show).
+        if (players.Count > 1) stats.RecordDeath(P(1).NetId, 2);
+        if (players.Count > 3) stats.RecordDeath(P(3).NetId);
         stats.Finished = true;
         stats.Victory = true;
         static EarnedBadge B(string id, string rarity) => new() { Id = id, Rarity = rarity };
@@ -627,8 +630,10 @@ internal static class DevPreview
         if (players.Count > 2) stats.SetBadges(P(2).NetId, Array.Empty<EarnedBadge>());
         if (players.Count > 3) stats.SetBadges(P(3).NetId, new[] { B("ELITE", "bronze"), B("SPEEDY", "silver") });
 
+        // Gold has its own random stream, so the other sample numbers don't change.
+        var purse = new Random(13);
         Dictionary<ulong, DefenseTotals> defense = players.ToDictionary(
-            p => p.NetId, _ => new DefenseTotals(rng.Next(150, 400), rng.Next(60, 200)));
+            p => p.NetId, _ => new DefenseTotals(rng.Next(150, 400), rng.Next(60, 200), Gold: purse.Next(450, 1100)));
         Dictionary<ulong, IReadOnlyList<DeckCard>> decks = deckModels.ToDictionary(
             kv => kv.Key, kv => GameReader.DeckFacts(kv.Value));
         RecapView view = RecapBuilder.Build(stats, players, defense, Loc.Text("WHO_CARRIED.result.victory_floor", 43), victory: true, decks: decks,

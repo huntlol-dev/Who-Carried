@@ -60,6 +60,14 @@ internal static class DecksTab
             counts.AddChild(k.Gap(6, 0));
             foreach (IGrouping<string, DeckEntry> type in deck.Entries.GroupBy(e => TypeGroup(e.Type)).OrderBy(g => Order(g.Key)))
                 counts.AddChild(Kit.Center(TypeChip(k, type.Key, type.Sum(e => e.Count))));
+            if (deck.Gold > 0)
+            {
+                counts.AddChild(k.Gap(6, 0));
+                HBoxContainer gold = k.Row(5);
+                gold.AddChild(Kit.Center(k.Pic(GameArt.Get(GameArt.Gold), 22, 22)));
+                gold.AddChild(Kit.Center(k.Text(Loc.Text("WHO_CARRIED.decks.gold", Kit.Num(deck.Gold)), 18, RecapTheme.Gold, true, Ink.Soft)));
+                counts.AddChild(Kit.Center(gold));
+            }
             counts.AddChild(k.Gap(6, 0));
             counts.AddChild(Kit.Center(k.Text(Loc.Text("WHO_CARRIED.decks.distinct", deck.Entries.Count), 15, RecapTheme.Muted)));
         }
@@ -242,6 +250,13 @@ internal static class DecksTab
         HBoxContainer who = k.Who(RecapTexts.Name(deck.PlayerLabel), deck.IconKey, accent, 17);
         column.AddChild(who);
         column.AddChild(k.Swatch(accent, width, 2, 0));
+        if (deck.Gold > 0)
+        {
+            HBoxContainer gold = k.Row(4);
+            gold.AddChild(Kit.Center(k.Pic(GameArt.Get(GameArt.Gold), 15, 15)));
+            gold.AddChild(Kit.Center(k.Text(Loc.Text("WHO_CARRIED.decks.gold", Kit.Num(deck.Gold)), 14, RecapTheme.Gold)));
+            column.AddChild(gold);
+        }
         int group = -1;
         foreach (DeckEntry entry in deck.Entries)
         {

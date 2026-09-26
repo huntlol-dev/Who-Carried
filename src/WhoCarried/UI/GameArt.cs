@@ -18,7 +18,7 @@ internal static class GameArt
         Cards = "cards", Achievements = "achievements",
         Block = "block", Skull = "skull", Brush = "brush",
         Dot = "dot", Monster = "monster", Elite = "elite", Boss = "boss", Unknown = "unknown", Perfect = "perfect",
-        DrawPile = "draw_pile";
+        DrawPile = "draw_pile", Gold = "gold";
 
     private static readonly Dictionary<string, string> Paths = new()
     {
@@ -45,6 +45,7 @@ internal static class GameArt
         [Unknown] = Ui + "map/icons/map_unknown.tres",
         [Perfect] = "res://images/ui/game_over_screen/badge_perfect.png",
         [DrawPile] = "res://images/packed/combat_ui/draw_pile.png",
+        [Gold] = "res://images/packed/sprite_fonts/gold_icon.png",
     };
 
     private static readonly Dictionary<string, Texture2D?> Cache = new();
