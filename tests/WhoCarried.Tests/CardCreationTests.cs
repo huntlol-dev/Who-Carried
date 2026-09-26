@@ -9,6 +9,37 @@ public static class CardCreationTests
     private static readonly PlayerInfo Bob = new(2, "Bob", "Silent", "7fff00", "SILENT");
 
     [Test]
+    public static void CreationIsVisibleInSoloWithoutClaimingTeammateSupport()
+    {
+        var s = new RunStats();
+        s.RecordCardGeneration(1, 1, Soul, 5);
+        var v = RecapBuilder.Build(s, new[] { Alice }, new Dictionary<ulong, DefenseTotals>(), "h");
+        Check.True(v.HasCardCreation && v.HasSupportContent && !v.HasSupport, "solo creation only");
+        Check.Equal((5, 0), (v.Creation[0].Cards[0].Created, v.Creation[0].Cards[0].Given), "self");
+        s.RecordCardGeneration(1, 2, Soul, 2);
+        v = RecapBuilder.Build(s, new[] { Alice, Bob }, new Dictionary<ulong, DefenseTotals>(), "h");
+        Check.True(v.HasCardCreation && v.HasSupport, "both sections");
+        Check.Equal((7, 2), (v.Creation[0].Cards[0].Created, v.Creation[0].Cards[0].Given), "subset");
+        Check.Equal(0, v.Creation[1].Cards.Count, "recipient has no generation");
+        var empty = RecapBuilder.Build(new RunStats(), new[] { Alice, Bob }, new Dictionary<ulong, DefenseTotals>(), "h");
+        Check.True(!empty.HasSupportContent, "empty");
+    }
+
+    [Test]
+    public static void ProjectionKeepsStableKeysAndOldCreationWithoutGiftHistory()
+    {
+        var s = new RunStats();
+        s.RecordCardCreated(1, new SourceRef(SourceKind.Card, "B", "Twin"), 3);
+        s.RecordCardCreated(1, new SourceRef(SourceKind.Card, "A", "Twin"), 3);
+        s.RecordDamage(2, Soul, 10);
+        var v = RecapBuilder.Build(s, new[] { Alice, Bob }, new Dictionary<ulong, DefenseTotals>(), "h");
+        Check.Equal((ulong)2, v.Creation[0].PlayerId, "scoreboard order");
+        Check.Equal("Card:A,Card:B", string.Join(",", v.Creation[1].Cards.Select(c => c.Key)), "tie uses keys");
+        Check.True(v.Creation[1].Cards.All(c => c.Created == 3 && c.Given == 0), "legacy totals");
+        Check.Equal(10, v.Overview.Sum(p => p.Value), "damage untouched");
+    }
+
+    [Test]
     public static void ReactionCreditRequiresEvidenceAndPreservesExplicitGifts()
     {
         Check.Equal((ulong?)1, CardCreationCredit.Resolve(2, 2, true, 1), "reaction applier");

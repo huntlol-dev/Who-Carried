@@ -19,6 +19,10 @@ public sealed record BarRow(string Label, string SubLabel, int Value, double Fra
 /// <summary>A card a player created during fights, and how many.</summary>
 public sealed record CreatedCard(string Label, int Count);
 
+public sealed record CreatedCardRow(string Key, string Label, int Created, int Given);
+public sealed record CreationRow(ulong PlayerId, string Label, string ColorHex, string? IconKey,
+                                 IReadOnlyList<CreatedCardRow> Cards);
+
 /// <summary>A player's damage from one kind of source ("Card", "Orb", "Relic", … "Other"), with its biggest source.</summary>
 public sealed record KindTotal(string Kind, int Amount, int Sources, string TopLabel, string? TopArtKey);
 
@@ -79,7 +83,8 @@ public sealed record RecapView(
     IReadOnlyList<Award> Awards,
     IReadOnlyList<PlayerBadges>? Badges,
     RunFacts? Facts = null,
-    IReadOnlyList<SupportRow>? SupportRows = null)
+    IReadOnlyList<SupportRow>? SupportRows = null,
+    IReadOnlyList<CreationRow>? CreationRows = null)
 {
     /// <summary>False while the run is still going: the game hands out badges only when it ends.</summary>
     public bool BadgesKnown => Badges != null;
@@ -89,6 +94,10 @@ public sealed record RecapView(
 
     /// <summary>Whether anyone gave a teammate anything. The saved image leaves the Support section out otherwise.</summary>
     public bool HasSupport => Support.Any(r => r.Any);
+
+    public IReadOnlyList<CreationRow> Creation => CreationRows ?? Array.Empty<CreationRow>();
+    public bool HasCardCreation => Creation.Any(p => p.Cards.Count > 0);
+    public bool HasSupportContent => HasSupport || HasCardCreation;
 }
 
 /// <summary>Turns counted stats into exactly what the panel and the exported card display. No game or Godot types.</summary>
@@ -180,7 +189,8 @@ public static class RecapBuilder
             stats.Finished
                 ? byDamage.Select(p => new PlayerBadges(p.NetId, p.Name, p.ColorHex, IconOf(p), badges[p.NetId])).ToList()
                 : null,
-            facts, support);
+            facts, support, byDamage.Select(p => new CreationRow(p.NetId, p.Name, p.ColorHex, IconOf(p),
+                CreationCards(stats.Get(p.NetId)))).ToList());
     }
 
     /// <summary>A player's badges with their names, best rarity first (the game's order within a rarity).</summary>
@@ -305,6 +315,15 @@ public static class RecapBuilder
                 .ToList();
 
     private static string? IconOf(PlayerInfo p) => string.IsNullOrEmpty(p.CharacterId) ? null : p.CharacterId;
+
+    private static IReadOnlyList<CreatedCardRow> CreationCards(PlayerTotals? totals) => totals == null
+        ? Array.Empty<CreatedCardRow>()
+        : totals.CardsCreated.Where(kv => kv.Value.Amount > 0)
+            .OrderByDescending(kv => kv.Value.Amount)
+            .ThenBy(kv => kv.Value.Label, StringComparer.Ordinal)
+            .ThenBy(kv => kv.Key, StringComparer.Ordinal)
+            .Select(kv => new CreatedCardRow(kv.Key, kv.Value.Label, kv.Value.Amount,
+                totals.CardGifts.TryGetValue(kv.Key, out var gift) ? gift.Amount : 0)).ToList();
 
     private static string Num(int value) => value.ToString("N0", CultureInfo.InvariantCulture);
 
