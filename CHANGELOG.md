@@ -6,7 +6,7 @@
 
 ### Added
 
-- Deaths on each player's scoreboard card: a skull line counts how many times they died, the wipe that loses a run included. Winning or abandoning a run doesn't add one, and deaths from before this update can't be recovered.
+- Deaths on each player's scoreboard card: a skull on their portrait counts how many times they died, the wipe that loses a run included. Winning or abandoning a run doesn't add one, and deaths from before this update can't be recovered.
 - Gold earned per player in the Decks tab and the exported image, from the game's own run history, so it's there for co-op guests and reloaded runs too.
 
 ### Changed

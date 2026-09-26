@@ -6,7 +6,7 @@ Date: 2026-09-26. Draft for review. Plan: [deaths and gold](../plans/2026-09-26-
 
 Two new per-player numbers, both working in co-op:
 
-- **Deaths:** how many times each player died, including the wipe that loses a run. It goes on their scoreboard card as its own line under the bonus damage, with the game's skull icon, so it's obvious at a glance (mockup option C, chosen by the owner).
+- **Deaths:** how many times each player died, including the wipe that loses a run. It goes on their scoreboard card as a small pill on the portrait: the game's skull and the count. The owner first chose its own line under the bonus damage (mockup option C). In the game, that line pushed the rest of the text box upwards, so the owner moved it onto the portrait, where it changes nothing else on the card.
 - **Gold earned:** how much gold each player picked up over the run. It goes in the Decks tab's header row for that player, next to the card count and type chips.
 
 No awards for either (the owner's call). Everything else on the recap stays as it is.
@@ -54,13 +54,13 @@ Every time the game kills a player counts, the wipe that loses the run included.
 
 ### On the card
 
-- **Placement:** its own line, directly under the bonus damage line, in the card's text box. It shows the game's skull (`GameArt.Skull`, the icon the Punching bag award already uses) at the bonus line's icon size (1.2 em), then the text at the bonus line's size (0.92 em).
-- **Wording:** "Died once" for 1 and "Died {0} times" otherwise. The whole line is one colour, the same off-white as the bonus line. The mockup showed the number in red, but the localization rules keep a sentence as one template and never split it into fragments. The bonus line already follows that rule and shows no coloured number either.
-- **Hidden at 0.** In solo it only appears on a lost run, as "Died once".
-- **Room:** the text box is about 9.8 em tall and today's lines use about 8.3 em; the new line needs about 1.6 em. The gap above the chips goes from 0.7 em to 0.4 em, the bonus line's from 0.45 em to 0.25 em, and the deaths line gets 0.25 em (tightened from a first try of 0.5, 0.3 and 0.3 after the in-game check). The damage number, caption, chips and all font sizes stay the same.
-- **Chinese (open):** Chinese text is taller, and on a card with both a bonus line and a deaths line the damage number pokes above the text box (about 23 px on 5-player cards and 18 px on 4-player ones, at 2560×1440). Chinese bonus cards already sat about 5 px over before this change. Fixing it needs a call against the rules above, like a smaller number on those cards or tighter gaps in Chinese only.
-- **Layout shift:** the text box centres its lines vertically. A card with a deaths line has its damage number about half a line higher than a card without one. The bonus line already behaves this way when a player has no bonus damage.
-- **Export:** the saved image builds its player cards with the same `ScoreboardTab.PlayerCard`, so the deaths line appears there too.
+- **Placement:** a pill on the portrait's bottom-left corner, just above the award plaque's row (`CardFace.SetTally`). It goes on the left because in the fanned hand each card is drawn over the one before it, so the next card covers the right side of every portrait. It sits above the plaque's row because a long award ("Jack of all trades") nearly fills the portrait's width on narrow cards.
+- **Look:** the game's skull (`GameArt.Skull`, the icon the Punching bag award already uses) at 1 em, then the count in bold off-white at 0.92 em, on the plaque's dark brown with a muted warm-grey border, so it doesn't read as a second award. It's about the plaque's height.
+- **No words:** the card has no hover tooltips (hovering lifts the card), so the pill shows only the skull and the number, the same in every language. There are no "Died once" strings.
+- **Hidden at 0.** In solo it only appears on a lost run, as "1".
+- **The text box doesn't change:** the damage number, caption, chips and bonus line stay exactly as they were, whether or not someone died.
+- **The skull in Chinese:** mainland China's rules for officially licensed games have made skulls get covered up, but those rules don't apply to a Steam mod. The game's own Chinese version shows this same skull, and skull-faced characters like the Necrobinder.
+- **Export:** the saved image builds its player cards with the same `ScoreboardTab.PlayerCard`, so the pill appears there too.
 - **Data:** `BarRow` gains `Deaths` (default 0), filled from `PlayerTotals.Deaths` for scoreboard rows.
 
 ## Gold earned
@@ -87,19 +87,17 @@ Because it comes from the game's own history, gold is right after a reload. It's
 
 ## Localization
 
-New keys in `eng.json` and `zhs.json`, in the same change:
+One new key in `eng.json` and `zhs.json`, in the same change. The deaths pill has no words.
 
 | Key | English | 简体中文 |
 |---|---|---|
-| `WHO_CARRIED.stat.deaths_one` | Died once | 阵亡 1 次 |
-| `WHO_CARRIED.stat.deaths` | Died {0} times | 阵亡 {0} 次 |
 | `WHO_CARRIED.decks.gold` | {0} gold earned | 获得 {0} 金币 |
 
 金币 is the game's own word for gold.
 
 ## Developer preview
 
-`DevPreview.BuildSample` gives the sample run deaths (2 for the second player, 1 for the fourth, none for the others) and gold for every player. The preview then shows cards with and without the line side by side, plus the gold in the Decks tab and the export. The sample run is a won one, so the single-player preview (`preview.flag` = `1`) shows no deaths line.
+`DevPreview.BuildSample` gives the sample run deaths (2 for the second player, 1 for the fourth, none for the others) and gold for every player. The preview then shows cards with and without the pill side by side, plus the gold in the Decks tab and the export. The sample run is a won one, so the single-player preview (`preview.flag` = `1`) shows no pill.
 
 ## Testing
 
@@ -115,13 +113,13 @@ New keys in `eng.json` and `zhs.json`, in the same change:
 
 **In the game** (preview flag, compared with the "before" screenshots taken on 2026-09-26 from the current build):
 
-- 4 players, English: the deaths line sits under the bonus damage on the cards that have deaths. Nothing overflows the text box or runs into the badges, and the damage number is the same size as before.
-- 5 players (`IRONCLAD,SILENT,REGENT,NECROBINDER,DEFECT`), English and Chinese (`… zhs`): the same checks on the narrowest cards.
-- 1 player: no deaths line; the card looks as it did before.
+- 4 players, English: the pill sits on the portraits of the cards that have deaths, clear of the plaque, the banner and the next card. Every text box matches the "before" screenshot (checked by a pixel difference: 0 on Mika's, noise on Jo's).
+- 5 players (`IRONCLAD,SILENT,REGENT,NECROBINDER,DEFECT`), Chinese (`… zhs`): the same checks on the narrowest cards.
+- 1 player: no pill; the card looks as it did before.
 - Decks tab and export: the coin and "gold earned" appear for each player, in both languages.
 
 **Real runs (pending, needs the owner):**
-- A co-op run where a teammate dies and is revived: `events.log` shows `died` and the card shows "Died once" straight away.
+- A co-op run where a teammate dies and is revived: `events.log` shows `died` and the card's skull shows "1" straight away.
 - A run lost to a wipe: every player gets a `died` line, and each card counts that death.
 - A won run: after the Architect, `events.log` shows a `killed as the run ends, not counted` line for each player, and the cards' death counts don't change.
 

@@ -10,6 +10,8 @@
 
 **Spec:** [Deaths on the card, gold in the Decks tab](../specs/2026-09-26-deaths-and-gold-design.md).
 
+**Changed after the in-game check:** deaths show as a skull pill on the portrait (`CardFace.SetTally`), not as a line in the text box. Task 4 Step 3's deaths line, its tighter gaps and the two `WHO_CARRIED.stat.deaths` keys are superseded; see the spec's "On the card". The replay's last screenshot is `replay-9-export.png`, not `replay-8-export.png`.
+
 ## Global constraints
 
 - Work on a branch, `feat/deaths-and-gold`, made from `main` before Task 1. Commit after each task as the steps say. Don't push.
