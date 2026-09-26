@@ -6,20 +6,21 @@
 
 ### Added
 
-- Deaths on each player's scoreboard card: a skull on their portrait counts how many times they died, the wipe that loses a run included. Winning or abandoning a run doesn't add one, and deaths from before this update can't be recovered.
+- Deaths on each player's scoreboard card and in the exported image: a skull on their portrait counts how many times they died, the wipe that loses a run included. Winning or abandoning a run doesn't add one, and deaths from before this update can't be recovered.
 - Gold earned per player in the Decks tab and the exported image, from the game's own run history, so it's there for co-op guests and reloaded runs too.
 
 ### Changed
 
 - Cards created, including Souls, now appear in Support and the exported image, with recorded teammate gifts shown separately. Self-creation is visible in solo runs too.
 - The Esc key beside Close on the recap's top bar can be clicked to close it, and lights gold on hover like the hotkey's key.
-- The damage number on every scoreboard card sits at the same height, whether or not the player has bonus damage. It's a little smaller, with room above it, so it no longer crowds the top of its box or spills over it in Chinese.
+- The damage number on every scoreboard card sits at the same height, whether or not the player has bonus damage. It's a little smaller, with room above it.
 
 ### Fixed
 
 - Soulbound-generated Souls credit the power's applier instead of its recipient. New creation events preserve that credit during replay; historical saves are not retroactively corrected.
 - Tall exported summaries retain their lower sections instead of being cut off at 8192 pixels.
 - The recap's timer no longer nudges the statistics beside it as it ticks.
+- In Chinese, the damage number on a scoreboard card no longer spills over the top of its box.
 
 ## [1.2.0] — 2026-09-24
 
