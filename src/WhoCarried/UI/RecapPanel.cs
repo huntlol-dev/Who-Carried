@@ -145,6 +145,9 @@ internal static class RecapPanel
         (Control time, Label timeText) = Stat(k, GameArt.Get(GameArt.Timer));
         (Control ascension, Label ascensionText) = Stat(k, GameArt.Get(GameArt.Ascension));
         (Control team, Label teamText) = Stat(k, GameArt.Get(GameArt.Swords));
+        time.Name = "RecapTimerStat";
+        timeText.Name = "RecapTimerText";
+        team.Name = "RecapTeamStat";
         foreach (Control stat in new[] { floor, time, ascension, team }) row.AddChild(Kit.Center(stat));
         HBoxContainer party = k.Row(-8);
         row.AddChild(Kit.Center(party));
@@ -208,6 +211,7 @@ internal static class RecapPanel
             floor.Visible = f > 0;
             string duration = RecapTexts.Duration(v.Facts?.Seconds ?? 0);
             timeText.Text = duration;
+            ReserveTimerWidth(k, timeText, duration);
             time.Visible = duration.Length > 0;
             ascensionText.Text = (v.Facts?.Ascension ?? 0).ToString();
             ascension.Visible = (v.Facts?.Ascension ?? 0) > 0;
@@ -243,6 +247,26 @@ internal static class RecapPanel
             Tracker.LogError("reading the key that closes the recap", e);
         }
         return null;
+    }
+
+    /// <summary>Leave room for HH:MM:SS from the first tick; longer runs can grow the slot, but never shrink it.</summary>
+    private static void ReserveTimerWidth(Kit k, Label label, string duration)
+    {
+        if (duration.Length == 0) return;
+        string[] parts = duration.Split(':');
+        int hourDigits = parts.Length == 3 ? Math.Max(2, parts[0].Length) : 2;
+        Font? font = label.GetThemeFont("font");
+        int size = label.GetThemeFontSize("font_size");
+        float Width(string text) => font?.GetStringSize(text, HorizontalAlignment.Left, -1, size).X
+            ?? text.Length * size;
+        float widestDigit = 0;
+        for (char digit = '0'; digit <= '9'; digit++)
+            widestDigit = Math.Max(widestDigit, Width(digit.ToString()));
+        float reserved = (hourDigits + 4) * widestDigit + 2 * Width(":")
+            + label.GetThemeConstant("outline_size");
+        float width = MathF.Ceiling(Math.Max(reserved, Kit.Measure(label)) + k.U(4));
+        if (width > label.CustomMinimumSize.X)
+            label.CustomMinimumSize = new Vector2(width, label.CustomMinimumSize.Y);
     }
 
     private static (Control, Label) Stat(Kit k, Texture2D? icon)

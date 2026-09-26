@@ -10,7 +10,9 @@
 
 **Spec:** [Stable timer width in the recap](../specs/2026-09-24-timer-panel-jitter-design.md).
 
-**Status:** Draft for review. No implementation has been performed or compiled from this plan. The user requested documents only and no commits. Native execution is recommended for this small, sequential fix; execution is not started by creating these documents.
+**Status:** Implementation is present in the working tree. Game-dependent verification is pending at the owner's explicit request; see the execution update below.
+
+**Execution update, 2026-09-24:** The owner subsequently requested "commit, then implement plan". Documents were committed as `da68c84`. The diagnostic and timer reservation are now implemented; the diagnostic build passed and the standalone suite passed 282/282 before and after the fix. The owner explicitly selected "Implement; leave game checks pending", so runtime RED/GREEN and all visual/game checks below remain pending. Implementation changes are left uncommitted for review. The draft code below is preserved as the original plan; current source is authoritative for implementation details.
 
 ## Global constraints
 
@@ -45,7 +47,7 @@ Read `RecapPanel.TopBar`/`Stat`, `Kit.Text`/`Measure`, `RecapUi.ShowView`/`Apply
 
 **Interfaces:** Consume `RecapUi.ShowView(RecapView, Func<string?, Texture2D?>, CardVisuals?)` and `RecapUi.Apply(RecapView)`. Add private `DevPreview.CheckTimer(string dataDir, Sample sample)`. Do not change public handles or add Core tests for Godot layout.
 
-- [ ] **Name the three existing controls** immediately after the stat declarations in `RecapPanel.TopBar`. This adds diagnostic identity without fixing their layout:
+- [x] **Name the three existing controls** immediately after the stat declarations in `RecapPanel.TopBar`. This adds diagnostic identity without fixing their layout:
 
 ```csharp
 time.Name = "RecapTimerStat";
@@ -53,7 +55,7 @@ timeText.Name = "RecapTimerText";
 team.Name = "RecapTeamStat";
 ```
 
-- [ ] **Route the opt-in preview.** Immediately after `Sample sample = BuildSample(characters);` in `DevPreview.Run`, before the existing `steam` branch, add:
+- [x] **Route the opt-in preview.** Immediately after `Sample sample = BuildSample(characters);` in `DevPreview.Run`, before the existing `steam` branch, add:
 
 ```csharp
 if (wanted == "timer")
@@ -65,7 +67,7 @@ if (wanted == "timer")
 
 The existing options parser already supports a language after the first word. `timer eng` and `timer zhs` therefore use the existing language-selection path and four default sample characters. Preserve every existing flag mode.
 
-- [ ] **Implement the focused preview.** Use the following body and helpers inside `DevPreview`. It tests ordinary ticks against the first reservation, then larger-hour growth separately. The async entry catches and logs failures rather than bringing down the game. It never injects controller input or calls the existing `CaptureTopBar` path.
+- [x] **Implement the focused preview.** Use the following body and helpers inside `DevPreview`. It tests ordinary ticks against the first reservation, then larger-hour growth separately. The async entry catches and logs failures rather than bringing down the game. It never injects controller input or calls the existing `CaptureTopBar` path.
 
 ```csharp
 private static async void CheckTimer(string dataDir, Sample sample)
@@ -162,7 +164,7 @@ private static async Task<Vector2> SettleTimer(Control root, Label label, Contro
 }
 ```
 
-- [ ] **Build the diagnostic-only change** with `& 'C:\Program Files\dotnet\dotnet.exe' build src/WhoCarried -c Release`. Resolve API/compiler issues before treating the preview as usable. This plan's code is a proposed implementation, not a previously compiled artifact.
+- [x] **Build the diagnostic-only change** with `& 'C:\Program Files\dotnet\dotnet.exe' build src/WhoCarried -c Release`. Resolve API/compiler issues before treating the preview as usable. This plan's code is a proposed implementation, not a previously compiled artifact.
 - [ ] **Capture the failing baseline before adding the fix**, once game deployment/launch is authorized. Use `preview.flag` content `timer eng` in the mod's data directory and the established Steam launch route. Verify the loaded DLL is the build just produced. Expected: `timer preview FAIL` reporting changed width/team X at 61 seconds. A load error, missing control, or timeout is a broken reproduction, not evidence of the timer defect.
 - [ ] **If runtime authorization is absent, leave this checkpoint pending.** Build results cannot replace the failing layout evidence. Do not silently run the game.
 
@@ -170,7 +172,7 @@ private static async Task<Vector2> SettleTimer(Control root, Label label, Contro
 
 **Interface:** Add private `RecapPanel.ReserveTimerWidth(Kit k, Label label, string duration)`. Consume the same formatted string already assigned to `timeText.Text`; preserve all other `Apply` behavior.
 
-- [ ] **Add this helper near `Stat`:**
+- [x] **Add this helper near `Stat`:**
 
 ```csharp
 private static void ReserveTimerWidth(Kit k, Label label, string duration)
@@ -195,7 +197,7 @@ private static void ReserveTimerWidth(Kit k, Label label, string duration)
 
 The fallback uses one em per character as a conservative starting reservation when a theme font cannot be read; the label's natural minimum and the actual-text check still protect rendering. This fallback requires visual verification, not an assertion that every possible font fits an em.
 
-- [ ] **Call the helper immediately after assigning `timeText.Text`:**
+- [x] **Call the helper immediately after assigning `timeText.Text`:**
 
 ```csharp
 string duration = RecapTexts.Duration(v.Facts?.Seconds ?? 0);
@@ -206,7 +208,7 @@ time.Visible = duration.Length > 0;
 
 Do not modify `Stat`, `Kit.Text`, duration formatting, font selection, timer polling, or the game's own controls. No event subscriptions or static cache are necessary. The maximum is retained by the label itself and reset when the panel is recreated.
 
-- [ ] **Build and run the existing regression suite:**
+- [x] **Build and run the existing regression suite:**
 
 ```powershell
 & 'C:\Program Files\dotnet\dotnet.exe' build src/WhoCarried -c Release
@@ -224,7 +226,7 @@ Require successful compilation and no test failures. Record actual totals; do no
 - [ ] **Inspect the complete bar** with four players: timer text/outline fully visible; spare space acceptable; ascension, damage, party, hotkey and Close do not overlap. Repeat once with the normal language font fallback path in a disposable diagnostic build by bypassing `LoadSubstituteFont` only for that check; restore `RecapTheme.cs` immediately afterward and ensure it is absent from the final diff. Do not claim this simulation proves all third-party fonts.
 - [ ] **Check real panel lifecycle with permission:** open the recap during a running game, resize it, close/reopen, and verify the time is current and all controls remain usable. The preview deliberately aborts on replacement instead of driving a different panel; rerun it for each settled canvas.
 - [ ] **Compare “Always show the Timer” on/off** during a stable run state. Confirm neighboring recap statistics stay still in both cases. Let the owner change the setting or obtain permission to control the game; restore the original setting after the comparison. Changes caused by actual floor/damage updates are outside this timer-only assertion.
-- [ ] **Document the preview** by adding to the existing `preview.flag` bullet in `README.md`: `Use timer eng or timer zhs to check that changing elapsed time leaves the recap's neighboring statistics in place; results are logged and preview-timer.png is saved on success.` Format the flag values and filename as inline code.
-- [ ] **Append verification evidence to the investigation:** exact game version, branch/build, language/canvas, before/after width/team-X values, outcome of boundary/long-run tests, visual observations, and any checks still pending. Do not replace the original investigation's limits with an unsupported success claim.
-- [ ] **Review the final diff** for timer-only scope and run `git diff --check`. If the fallback experiment changed and restored source, rebuild the final tree. Re-run the suite only if subsequent production changes justify it.
-- [ ] **Report the result and remaining checks. Leave all changes uncommitted.** No deployment, publication, or version bump is part of this plan.
+- [x] **Document the preview** by adding to the existing `preview.flag` bullet in `README.md`: `Use timer eng or timer zhs to check that changing elapsed time leaves the recap's neighboring statistics in place; results are logged and preview-timer.png is saved on success.` Format the flag values and filename as inline code.
+- [x] **Append verification evidence to the investigation:** exact game version, branch/build, language/canvas, before/after width/team-X values, outcome of boundary/long-run tests, visual observations, and any checks still pending. Do not replace the original investigation's limits with an unsupported success claim.
+- [x] **Review the final diff** for timer-only scope and run `git diff --check`. If the fallback experiment changed and restored source, rebuild the final tree. Re-run the suite only if subsequent production changes justify it.
+- [x] **Report the result and remaining checks. Leave all changes uncommitted.** No deployment, publication, or version bump is part of this plan.

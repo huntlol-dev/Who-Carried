@@ -63,3 +63,13 @@ Keep the change local to the timer. Other values such as floor and team damage c
 - In game, compare the setting on/off with the recap open and elapsed time advancing. Distinguish the recap's bar from the underlying game's bar, then check closing/reopening the recap.
 
 The existing standalone test project compiles Core and Localization, not the Godot UI. Passing those tests would not demonstrate this layout fix. No build or test-suite run was needed for this investigation-only change.
+
+## Implementation follow-up — 2026-09-24
+
+The investigation, spec and plan were committed as `da68c84` on `bug/timer-panel-jitter` at the owner's request. The implementation adds a font-aware, growing-only minimum width to the recap timer label, initially sized for `HH:MM:SS`. Longer hour fields can expand it; later shorter values cannot shrink it. The game's timer preference, elapsed-time formatting and refresh cadence are unchanged.
+
+The `timer eng` / `timer zhs` developer preview now drives the real recap with fixed sample data and changing elapsed seconds. It checks the timer width and team-stat X coordinate, ordinary ticks, minute/hour boundaries, three-digit-hour growth, and missing/zero time. It saves `preview-timer-normal.png` after ordinary checks and `preview-timer.png` after long-run/visibility checks. The preview is inert without its explicit flag.
+
+Verification performed: the diagnostic-only build and the timer-fix release build succeeded with zero warnings/errors, and the existing standalone suite passed 282/282 both before and after the implementation. No game was deployed, launched or controlled: the owner explicitly chose **"Implement; leave game checks pending"**. No runtime before/after geometry, language/canvas comparison, screenshot inspection, fallback-font run, live resize/reopen, or game-setting comparison has been completed. Those remain acceptance checks, not implied successes from compilation or Core tests.
+
+Code review found no critical or important issues. The preview's initial wait was corrected to use the engine's SceneTree because the first recap layer attaches deferred; the corrected build also has zero warnings/errors. Two minor evidence improvements remain before visual acceptance: log the timer preview's canvas/window dimensions, and capture the long duration itself (the current final screenshot shows `1:01` after verifying that the expanded slot is retained).

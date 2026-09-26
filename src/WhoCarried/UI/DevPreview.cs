@@ -74,6 +74,11 @@ internal static class DevPreview
                 Advance = () => CreationPreview.Apply(original.Advance(), creationCase, advanced: true),
             };
         }
+        if (wanted == "timer")
+        {
+            CheckTimer(dataDir, sample);
+            return;
+        }
         if (wanted == "steam")
         {
             CheckSteam(dataDir, sample);
@@ -135,6 +140,101 @@ internal static class DevPreview
                 CaptureTab(index + 1);
             });
         }
+    }
+
+    /// <summary>Checks timer text and neighboring geometry in the real recap, only for the timer preview flag.</summary>
+    private static async void CheckTimer(string dataDir, Sample sample)
+    {
+        PanelHandle? handle = null;
+        try
+        {
+            RunFacts facts = sample.View.Facts
+                ?? throw new InvalidOperationException("timer preview needs run facts");
+            RecapView At(long seconds) => sample.View with
+            {
+                Facts = facts with { Seconds = seconds }
+            };
+            handle = RecapUi.ShowView(At(60), sample.Icons, new CardVisuals(sample.CardFor));
+            Label label = (Label)handle.Root.FindChild("RecapTimerText", true, false);
+            Control team = (Control)handle.Root.FindChild("RecapTeamStat", true, false);
+            Control timer = (Control)handle.Root.FindChild("RecapTimerStat", true, false);
+            if (label == null || team == null || timer == null)
+                throw new InvalidOperationException("timer preview controls missing");
+
+            async Task<Vector2> Read(long seconds)
+            {
+                if (RecapUi.Open != handle)
+                    throw new InvalidOperationException("timer preview closed or resized; rerun at the new size");
+                RecapUi.Apply(At(seconds));
+                Vector2 geometry = await SettleTimer(handle.Root, label, team);
+                string expected = RecapTexts.Duration(seconds);
+                if (label.Text != expected || timer.Visible != (expected.Length > 0))
+                    throw new InvalidOperationException("timer preview text/visibility mismatch");
+                if (expected.Length > 0 && label.Size.X + 0.5f < Kit.Measure(label))
+                    throw new InvalidOperationException("timer text exceeds its label");
+                Tracker.Note($"timer preview: {seconds}s text={label.Text} width={geometry.X} teamX={geometry.Y}");
+                return geometry;
+            }
+
+            Vector2 baseline = await Read(60);
+            long[] boundaries = { 61, 60, 599, 600, 3599, 3600, 35999, 36000, 359999, 1 };
+            long[] sweep = Enumerable.Range(0, 60).Select(i => 60L + i)
+                .Concat(Enumerable.Range(0, 60).Select(i => 35940L + i)).ToArray();
+            foreach (long seconds in boundaries.Concat(sweep).Concat(sweep.Reverse()))
+                RequireTimerStable(baseline, await Read(seconds), seconds);
+
+            await Read(36000);
+            ((SceneTree)Engine.GetMainLoop()).Root.GetTexture().GetImage()
+                .SavePng(Path.Combine(dataDir, "preview-timer-normal.png"));
+
+            Vector2 expanded = await Read(360000); // 100:00:00: one growth is allowed
+            if (expanded.X + 0.5f < baseline.X)
+                throw new InvalidOperationException("timer width shrank on hour expansion");
+            foreach (long seconds in new long[] { 360001, 360008, 360059, 360060, 60, 61 })
+                RequireTimerStable(expanded, await Read(seconds), seconds);
+
+            await Read(0); // visibility transitions are deliberately outside the stability assertion
+            RecapUi.Apply(sample.View with { Facts = null });
+            await SettleTimer(handle.Root, label, team);
+            if (timer.Visible) throw new InvalidOperationException("missing facts must hide timer");
+            RequireTimerStable(expanded, await Read(61), 61);
+            ((SceneTree)Engine.GetMainLoop()).Root.GetTexture().GetImage()
+                .SavePng(Path.Combine(dataDir, "preview-timer.png"));
+            Tracker.Note("timer preview PASS");
+        }
+        catch (Exception e)
+        {
+            Tracker.LogError("timer preview FAIL", e);
+        }
+        finally
+        {
+            if (handle != null && RecapUi.Open == handle) RecapUi.Hide();
+        }
+    }
+
+    private static void RequireTimerStable(Vector2 expected, Vector2 actual, long seconds)
+    {
+        if (Math.Abs(expected.X - actual.X) > 0.5f || Math.Abs(expected.Y - actual.Y) > 0.5f)
+            throw new InvalidOperationException($"timer moved at {seconds}s: {expected} -> {actual}");
+    }
+
+    private static async Task<Vector2> SettleTimer(Control root, Label label, Control team)
+    {
+        // ShowView attaches its first CanvasLayer deferred, so the panel may not have a tree until the next frame.
+        var tree = (SceneTree)Engine.GetMainLoop();
+        Vector2 previous = new(float.NaN, float.NaN);
+        int stable = 0;
+        for (int frame = 0; frame < 30; frame++)
+        {
+            await tree.ToSignal(tree, SceneTree.SignalName.ProcessFrame);
+            if (!GodotObject.IsInstanceValid(root) || !root.IsInsideTree())
+                throw new InvalidOperationException("timer preview panel closed");
+            Vector2 current = new(label.Size.X, team.GlobalPosition.X);
+            stable = current == previous ? stable + 1 : 0;
+            if (stable >= 3) return current;
+            previous = current;
+        }
+        throw new InvalidOperationException("timer layout did not settle within 30 frames");
     }
 
     /// <summary>
