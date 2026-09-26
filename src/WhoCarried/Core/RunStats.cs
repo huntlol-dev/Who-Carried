@@ -109,6 +109,12 @@ public sealed class PlayerTotals
     public int LowestHp { get; set; }
     public int LowestHpMax { get; set; }
 
+    /// <summary>
+    /// Times this player died, the wipe that loses a run included. The kills the game does to end a run that's already
+    /// over (after a win, or when abandoning) aren't deaths.
+    /// </summary>
+    public int Deaths { get; set; }
+
     /// <summary>The game's end-of-run badges for this player; empty until the run ends.</summary>
     public List<EarnedBadge> Badges { get; set; } = new();
 }
@@ -204,6 +210,13 @@ public sealed class RunStats
         totals.LowestHp = hp;
         totals.LowestHpMax = maxHp;
         return true;
+    }
+
+    /// <summary>A player died (see <see cref="PlayerTotals.Deaths"/>).</summary>
+    public void RecordDeath(ulong playerId, int count = 1)
+    {
+        if (count <= 0) return;
+        GetOrAdd(KeyFor(playerId)).Deaths += count;
     }
 
     /// <summary>Replaces a player's end-of-run badges.</summary>

@@ -9,9 +9,10 @@ namespace WhoCarried.Core;
 /// <param name="Award">The player's headline award localization key (scoreboard rows only); "" for none.</param>
 /// <param name="Badges">The game's end-of-run badges for this player (scoreboard rows only), best first.</param>
 /// <param name="ArtKey">A damage source's picture (see <see cref="SourceArt"/>); null for none.</param>
+/// <param name="Deaths">Times the player died this run (scoreboard rows only); 0 = none.</param>
 public sealed record BarRow(string Label, string SubLabel, int Value, double Fraction, double? Share, string ColorHex,
                             string? IconKey = null, int Bonus = 0, int BlockRemoved = 0, string Award = "",
-                            IReadOnlyList<BadgeInfo>? Badges = null, string? ArtKey = null)
+                            IReadOnlyList<BadgeInfo>? Badges = null, string? ArtKey = null, int Deaths = 0)
 {
     public IReadOnlyList<BadgeInfo> BadgeList => Badges ?? Array.Empty<BadgeInfo>();
 }
@@ -133,7 +134,8 @@ public static class RecapBuilder
                 stats.Get(p.NetId)?.DebuffBonus.Values.Sum(b => b.Amount) ?? 0,
                 stats.Get(p.NetId)?.BlockRemoved ?? 0,
                 AwardBuilder.Headline(awards, p.NetId),
-                badges[p.NetId]))
+                badges[p.NetId],
+                Deaths: stats.Get(p.NetId)?.Deaths ?? 0))
             .ToList();
         if (unattributed > 0)
             overview.Add(new BarRow(UnattributedLabel, "", unattributed, Fraction(unattributed, max), null, GreyHex,

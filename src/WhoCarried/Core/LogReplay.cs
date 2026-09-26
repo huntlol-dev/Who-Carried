@@ -8,7 +8,7 @@ namespace WhoCarried.Core;
 /// <summary>
 /// Rebuilds a run's stats from the events.log the mod wrote while it was played, applying today's rules: block
 /// removed is kept apart from damage dealt, and pet attacks are split by what triggered them. Stats an older log never
-/// recorded (creation in older logs, what enemy debuffs cost, Strength-loss prevention, in-fight HP lows, support given to teammates) stay empty.
+/// recorded (creation in older logs, what enemy debuffs cost, Strength-loss prevention, in-fight HP lows, support given to teammates, deaths) stay empty.
 /// </summary>
 public static class LogReplay
 {
@@ -38,6 +38,10 @@ public static class LogReplay
     private static readonly Regex RunEnded = new(Where + @"run ended: (victory|defeat)", RegexOptions.Compiled);
     private static readonly Regex HpLow = new(Where + @"(.+?) hp low (\d+)/(\d+)$", RegexOptions.Compiled);
     private static readonly Regex Badge = new(Where + @"(.+?) badge (\S+) \((\w+)\)$", RegexOptions.Compiled);
+
+    /// <summary>The word after a player's name on a death that counts (see <see cref="RunStats.RecordDeath"/>).</summary>
+    public const string Died = "died";
+    private static readonly Regex Death = new(Where + @"(.+?) " + Died + "$", RegexOptions.Compiled);
     private static readonly Regex Gave = new(Where + @"(.+?) gave (\d+) (energy|cards|block|buffs|draws) to (.+?) \| (.*)$", RegexOptions.Compiled);
 
     /// <summary>The first line of a run's events.log, which <see cref="Parse"/> reads the run key back from.</summary>
@@ -162,6 +166,10 @@ public static class LogReplay
             else if ((m = Badge.Match(line)).Success)
             {
                 if (Who(m.Groups[3].Value) is ulong id) badges.Add((id, new EarnedBadge { Id = m.Groups[4].Value, Rarity = m.Groups[5].Value }));
+            }
+            else if ((m = Death.Match(line)).Success)
+            {
+                if (Who(m.Groups[3].Value) is ulong id) stats.RecordDeath(id);
             }
         }
 
