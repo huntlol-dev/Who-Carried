@@ -17,6 +17,7 @@
 
 ### Fixed
 
+- Who Carried no longer changes how other mods' effects play when they're built on one shared generic class. Since 1.2.0, watching them could make every version of that class run as the same one: several "auto-play your Form card at the start of combat" runes each looked for the same card, so all but one did nothing, and in co-op the first turn could desync. Hooks in generic classes are no longer watched; their damage just isn't credited to them.
 - Soulbound-generated Souls credit the power's applier instead of its recipient. New creation events preserve that credit during replay; historical saves are not retroactively corrected.
 - Tall exported summaries retain their lower sections instead of being cut off at 8192 pixels.
 - The recap's timer no longer nudges the statistics beside it as it ticks.
