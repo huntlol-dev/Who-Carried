@@ -6,13 +6,16 @@ public sealed record DeckCard(string Id, string Label, string Type, string Rarit
 /// <summary>All copies of one card id in a deck, with the damage that card id dealt this run.</summary>
 public sealed record DeckEntry(string Id, string Label, string Type, string Rarity, int Count, int UpgradedCount, int Damage);
 
+/// <param name="Gold">Gold the player earned over the run (see <see cref="DefenseTotals.Gold"/>); 0 = none or unknown.</param>
 public sealed record DeckView(ulong PlayerId, string PlayerLabel, string ColorHex, string? IconKey, int CardCount,
-                              IReadOnlyList<DeckEntry> Entries);
+                              IReadOnlyList<DeckEntry> Entries, int Gold = 0);
 
 public static class DeckBuilder
 {
+    /// <param name="history">The game's per-floor totals, for each player's gold; null when there are none.</param>
     public static IReadOnlyList<DeckView> Build(RunStats stats, IEnumerable<PlayerInfo> players,
-                                                IReadOnlyDictionary<ulong, IReadOnlyList<DeckCard>>? decks)
+                                                IReadOnlyDictionary<ulong, IReadOnlyList<DeckCard>>? decks,
+                                                IReadOnlyDictionary<ulong, DefenseTotals>? history = null)
     {
         return players.Select(p =>
         {
@@ -34,7 +37,8 @@ public static class DeckBuilder
                 .ThenBy(e => e.Label, StringComparer.Ordinal)
                 .ToList();
             return new DeckView(p.NetId, $"{p.Name} · {p.Character}", p.ColorHex,
-                string.IsNullOrEmpty(p.CharacterId) ? null : p.CharacterId, cards.Count, entries);
+                string.IsNullOrEmpty(p.CharacterId) ? null : p.CharacterId, cards.Count, entries,
+                history?.GetValueOrDefault(p.NetId)?.Gold ?? 0);
         }).ToList();
     }
 

@@ -44,8 +44,13 @@ public sealed record DefenseRow(string Label, string ColorHex, int Taken, int Bl
 /// <summary>The run at a glance, for the top bar: floor reached, ascension, play time and seed.</summary>
 public sealed record RunFacts(int Floor, int Ascension, long Seconds, string Seed, int Act = 0);
 
+/// <summary>
+/// Everything the recap takes from the game's own per-floor history, per player (named for the Defense tab it first
+/// served).
+/// </summary>
 /// <param name="LowestHp">The lowest HP the player ended a floor on (0 = unknown), with their max HP then.</param>
-public sealed record DefenseTotals(int Taken, int Healed, int LowestHp = 0, int LowestHpMax = 0);
+/// <param name="Gold">Gold earned over the run: every gain the game recorded, not starting gold; nothing taken off for spending.</param>
+public sealed record DefenseTotals(int Taken, int Healed, int LowestHp = 0, int LowestHpMax = 0, int Gold = 0);
 
 /// <summary>What one player gave their teammates over the run (see <see cref="RunStats.RecordSupport"/>).</summary>
 public sealed record SupportRow(string Label, string ColorHex, string? IconKey, string Character,
@@ -177,7 +182,7 @@ public static class RecapBuilder
         List<SupportRow> support = byDamage.Select(p => Support(p, stats.Get(p.NetId))).ToList();
 
         return new RecapView(header, overview, sources, timeline, fightActs, actStarts, fightPoints, defenseRows,
-            Highlights(stats, players, team), victory, DeckBuilder.Build(stats, byDamage, decks),
+            Highlights(stats, players, team), victory, DeckBuilder.Build(stats, byDamage, decks, defense),
             DebuffBuilder.Build(stats, byDamage),
             Note(stats, players, t => t.DebuffBonus, "WHO_CARRIED.summary.bonus_note"),
             Note(stats, players, t => t.DebuffPrevented, "WHO_CARRIED.summary.prevented_note"),

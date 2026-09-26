@@ -45,7 +45,7 @@ internal static class Replay
                 CharacterId = records.TryGetValue(p.NetId, out RunHistory.PlayerRecord? r) ? Entry(r.CharacterId) : "",
             }).ToList();
             Dictionary<ulong, DefenseTotals> defense = records.Values.ToDictionary(r => r.Id,
-                r => new DefenseTotals(r.Taken, r.Healed, r.LowestHp, r.LowestHpMax));
+                r => new DefenseTotals(r.Taken, r.Healed, r.LowestHp, r.LowestHpMax, r.Gold));
             // The game's saved run has everyone's badges (logs from before badges were recorded don't).
             if (history != null)
             {

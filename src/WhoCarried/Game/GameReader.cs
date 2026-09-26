@@ -180,11 +180,15 @@ internal static class GameReader
             .OrderByDescending(c => c.CurrentUpgradeLevel)
             .FirstOrDefault();
 
-    /// <summary>Damage taken, HP healed and the lowest end-of-floor HP per player, from the game's own per-floor history.</summary>
+    /// <summary>
+    /// Damage taken, HP healed, the lowest end-of-floor HP and gold earned per player, from the game's own per-floor
+    /// history.
+    /// </summary>
     public static IReadOnlyDictionary<ulong, DefenseTotals> Defense(IRunState run)
     {
         var taken = new Dictionary<ulong, int>();
         var healed = new Dictionary<ulong, int>();
+        var gold = new Dictionary<ulong, int>();
         var lows = new FloorLows();
         bool firstPoint = true;
         foreach (var act in run.MapPointHistory)
@@ -193,15 +197,16 @@ internal static class GameReader
             foreach (var stats in point.PlayerStats)
             {
                 taken[stats.PlayerId] = taken.GetValueOrDefault(stats.PlayerId) + stats.DamageTaken;
+                gold[stats.PlayerId] = gold.GetValueOrDefault(stats.PlayerId) + stats.GoldGained;
                 // The run's first point records the starting HP as "healed" (0 -> start HP); that isn't healing.
                 healed[stats.PlayerId] = healed.GetValueOrDefault(stats.PlayerId) + (firstPoint ? 0 : stats.HpHealed);
                 lows.Add(stats.PlayerId, stats.CurrentHp, stats.MaxHp, stats.DamageTaken);
             }
             firstPoint = false;
         }
-        return taken.Keys.Union(healed.Keys)
+        return taken.Keys.Union(healed.Keys).Union(gold.Keys)
             .ToDictionary(id => id, id => new DefenseTotals(taken.GetValueOrDefault(id), healed.GetValueOrDefault(id),
-                lows.Get(id).Hp, lows.Get(id).Max));
+                lows.Get(id).Hp, lows.Get(id).Max, gold.GetValueOrDefault(id)));
     }
 
     /// <summary>

@@ -4,7 +4,7 @@ namespace WhoCarried.Core;
 
 /// <summary>
 /// The parts of the game's own saved run (saves/history/&lt;start time&gt;.run) the recap needs: result, floors, and
-/// per player the character, final deck, damage taken, HP healed, lowest HP after a floor, and badges.
+/// per player the character, final deck, damage taken, HP healed, lowest HP after a floor, gold earned, and badges.
 /// </summary>
 /// <param name="Rooms">Each floor's map room ("monster", "elite", "boss", "unknown", "shop"…), by floor number.</param>
 public sealed record RunHistory(bool Win, int Floors, long StartTime, IReadOnlyList<RunHistory.PlayerRecord> Players,
@@ -14,8 +14,10 @@ public sealed record RunHistory(bool Win, int Floors, long StartTime, IReadOnlyL
     /// <param name="CharacterId">"CHARACTER.NECROBINDER" style id.</param>
     /// <param name="Deck">Card ids ("CARD.STRIKE_SILENT") with their upgrade level.</param>
     /// <param name="LowestHp">The lowest HP (as a share of max HP) the player ended a floor on and lived; 0 = none.</param>
+    /// <param name="Gold">Gold earned: the sum of every floor's gold_gained.</param>
     public sealed record PlayerRecord(ulong Id, string CharacterId, IReadOnlyList<(string CardId, int Upgrades)> Deck, int Taken,
-                                      int Healed, int LowestHp = 0, int LowestHpMax = 0, IReadOnlyList<EarnedBadge>? Badges = null);
+                                      int Healed, int LowestHp = 0, int LowestHpMax = 0, IReadOnlyList<EarnedBadge>? Badges = null,
+                                      int Gold = 0);
 
     public static RunHistory Parse(string json)
     {
@@ -26,6 +28,7 @@ public sealed record RunHistory(bool Win, int Floors, long StartTime, IReadOnlyL
 
         var taken = new Dictionary<ulong, int>();
         var healed = new Dictionary<ulong, int>();
+        var gold = new Dictionary<ulong, int>();
         var lows = new FloorLows();
         var rooms = new Dictionary<int, string>();
         int floors = 0;
@@ -44,6 +47,7 @@ public sealed record RunHistory(bool Win, int Floors, long StartTime, IReadOnlyL
                     {
                         ulong id = p.GetProperty("player_id").GetUInt64();
                         taken[id] = taken.GetValueOrDefault(id) + Int(p, "damage_taken");
+                        gold[id] = gold.GetValueOrDefault(id) + Int(p, "gold_gained");
                         // The run's first point records the starting HP as "healed" (0 -> start HP); that isn't healing.
                         if (!first) healed[id] = healed.GetValueOrDefault(id) + Int(p, "hp_healed");
                         lows.Add(id, Int(p, "current_hp"), Int(p, "max_hp"), Int(p, "damage_taken"));
@@ -74,7 +78,7 @@ public sealed record RunHistory(bool Win, int Floors, long StartTime, IReadOnlyL
                 (int lowHp, int lowMax) = lows.Get(id);
                 players.Add(new PlayerRecord(id, p.TryGetProperty("character", out JsonElement ch) ? ch.GetString() ?? "" : "",
                     deck, taken.GetValueOrDefault(id), healed.GetValueOrDefault(id), lowHp, lowMax,
-                    badges.Where(b => b.Id.Length > 0).ToList()));
+                    badges.Where(b => b.Id.Length > 0).ToList(), gold.GetValueOrDefault(id)));
             }
         }
         long runTime = root.TryGetProperty("run_time", out JsonElement rt) && rt.TryGetInt64(out long t) ? t : 0;
