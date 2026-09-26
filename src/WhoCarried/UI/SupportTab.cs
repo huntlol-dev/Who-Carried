@@ -5,29 +5,46 @@ using WhoCarried.Localization;
 namespace WhoCarried.UI;
 
 /// <summary>
-/// What players gave their teammates, one card per kind of help under a "Given to teammates" heading: its icon and name, the
-/// team's total, and a bar per player who gave any, longest first, with the award it won. Kinds nobody gave are left
-/// out. With nothing given (or nobody to give to) it says so instead.
+/// Generated cards (including self-creation), followed by the separate teammate-gift categories.
 /// </summary>
 internal static class SupportTab
 {
-    public static Control Create(Kit k, RecapView view, Live live)
+    public static Control Create(Kit k, RecapView view, Live live, PadTab? pad = null)
     {
         Control tab = k.Box(RecapPanel.DesignW, RecapPanel.DesignH);
+        var scroll = new ScrollContainer
+        {
+            HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
+            Position = k.V(24, 132), Size = k.V(1556, 652), MouseFilter = Control.MouseFilterEnum.Pass,
+        };
+        tab.AddChild(scroll);
+        if (pad != null) pad.Scroll = PadTab.Scrolls(scroll, k.U(PadTab.ScrollStep));
+        var inset = new MarginContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        inset.AddThemeConstantOverride("margin_left", k.F(16));
+        inset.AddThemeConstantOverride("margin_top", k.F(8));
+        inset.AddThemeConstantOverride("margin_bottom", k.F(12));
+        scroll.AddChild(inset);
+        VBoxContainer content = k.Column(24);
+        content.CustomMinimumSize = k.V(1522, 0);
+        inset.AddChild(content);
+        VBoxContainer creation = k.Column(14);
+        creation.AddChild(k.Heading(Loc.Text("WHO_CARRIED.support.created_heading"), GameArt.Get(GameArt.Cards)));
+        creation.AddChild(CreationPanels.Create(k, view, 1522, live));
+        content.AddChild(creation);
         VBoxContainer shown = k.Column(14);
         shown.AddChild(k.Heading(Loc.Text("WHO_CARRIED.support.heading"), HeadingArt(k, view), Loc.Text("WHO_CARRIED.support.hint")));
         shown.AddChild(Cards(k, view, 1522, 3, live));
-        tab.AddChild(k.At(shown, 40, 140, 1522, -1));
+        content.AddChild(shown);
 
-        Label empty = k.Text("", 18, RecapTheme.Muted);
+        Label empty = k.Text(Loc.Text("WHO_CARRIED.empty.support"), 18, RecapTheme.Muted);
         empty.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        tab.AddChild(k.At(empty, 40, 146, 1522, -1));
+        content.AddChild(empty);
 
         void Apply(RecapView v)
         {
             shown.Visible = v.HasSupport;
-            empty.Visible = !v.HasSupport;
-            empty.Text = v.Support.Count > 1 ? Loc.Text("WHO_CARRIED.empty.support") : Loc.Text("WHO_CARRIED.support.solo");
+            creation.Visible = v.HasCardCreation;
+            empty.Visible = !v.HasSupportContent;
         }
         Apply(view);
         live.On(Apply);

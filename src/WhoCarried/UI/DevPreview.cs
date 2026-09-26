@@ -64,6 +64,16 @@ internal static class DevPreview
         }
         if (characters.Length == 0) characters = all.Take(4).ToArray();
         Sample sample = BuildSample(characters);
+        string? creationCase = options.FirstOrDefault(o => o.StartsWith("creation-", StringComparison.Ordinal));
+        if (creationCase != null)
+        {
+            Sample original = sample;
+            sample = original with
+            {
+                View = CreationPreview.Apply(original.View, creationCase),
+                Advance = () => CreationPreview.Apply(original.Advance(), creationCase, advanced: true),
+            };
+        }
         if (wanted == "steam")
         {
             CheckSteam(dataDir, sample);
@@ -83,7 +93,7 @@ internal static class DevPreview
         {
             if (RecapUi.Open is not PanelHandle handle) return;
             RecapView later = sample.Advance();
-            handle.Tabs.CurrentTab = 0;
+            handle.Tabs.CurrentTab = creationCase != null ? 4 : 0;
             RecapUi.Apply(later);
             Later.Run(1.2, () =>
             {
@@ -394,11 +404,14 @@ internal static class DevPreview
                 }
                 stats.RecordDebuffApplied(P(1).NetId, piercingWail, 6);
                 stats.RecordDebuffPrevented(P(1).NetId, piercingWail, rng.Next(4, 14) * act);
-                stats.RecordCardCreated(P(1).NetId, shiv, rng.Next(2, 6));
+                stats.RecordCardGeneration(P(1).NetId, P(1).NetId, shiv, rng.Next(2, 6));
+                var soul = new SourceRef(SourceKind.Card, "SOUL", GameText.Native("cards", "SOUL.title", "SOUL"));
+                stats.RecordCardGeneration(P(2).NetId, P(2).NetId, soul, 2);
+                stats.RecordCardGeneration(P(2).NetId, P(3).NetId, soul, 2);
                 if (fight % 2 == 0) stats.RecordCardCreated(P(2).NetId, new SourceRef(SourceKind.Card, "SOVEREIGN_BLADE", GameText.Native("cards", "SOVEREIGN_BLADE.title", "SOVEREIGN_BLADE")));
                 // Co-op help: everyone gives the next player round a bit of everything, each leaning on one kind so
                 // every support award has a clear winner. In a solo preview these are gifts to yourself, which don't
-                // count: the tab shows its hint.
+                // count; the tab still shows the cards created for yourself.
                 for (int i = 0; i < 4; i++)
                 {
                     ulong from = P(i).NetId, to = P(i + 1).NetId;

@@ -16,9 +16,7 @@ public sealed record BarRow(string Label, string SubLabel, int Value, double Fra
     public IReadOnlyList<BadgeInfo> BadgeList => Badges ?? Array.Empty<BadgeInfo>();
 }
 
-/// <summary>A card a player created during fights, and how many.</summary>
-public sealed record CreatedCard(string Label, int Count);
-
+/// <summary>All outputs and their recorded teammate-gift subset; keys are stable across translations.</summary>
 public sealed record CreatedCardRow(string Key, string Label, int Created, int Given);
 public sealed record CreationRow(ulong PlayerId, string Label, string ColorHex, string? IconKey,
                                  IReadOnlyList<CreatedCardRow> Cards);
@@ -27,11 +25,8 @@ public sealed record CreationRow(ulong PlayerId, string Label, string ColorHex, 
 public sealed record KindTotal(string Kind, int Amount, int Sources, string TopLabel, string? TopArtKey);
 
 public sealed record SourcesView(string PlayerLabel, IReadOnlyList<BarRow> Rows, string ColorHex = RecapBuilder.GreyHex,
-                                 string? IconKey = null, IReadOnlyList<CreatedCard>? Created = null,
-                                 IReadOnlyList<KindTotal>? Kinds = null)
+                                 string? IconKey = null, IReadOnlyList<KindTotal>? Kinds = null)
 {
-    public IReadOnlyList<CreatedCard> CreatedCards => Created ?? Array.Empty<CreatedCard>();
-
     /// <summary>Damage by kind of source, biggest first (every source counted, not just the top few).</summary>
     public IReadOnlyList<KindTotal> KindTotals => Kinds ?? Array.Empty<KindTotal>();
 }
@@ -146,7 +141,7 @@ public static class RecapBuilder
 
         var sources = byDamage
             .Select(p => new SourcesView($"{p.Name} · {p.Character}", SourceRows(stats.Get(p.NetId), p.ColorHex),
-                p.ColorHex, IconOf(p), Created(stats.Get(p.NetId)), Kinds(stats.Get(p.NetId))))
+                p.ColorHex, IconOf(p), Kinds(stats.Get(p.NetId))))
             .ToList();
         if (unattributed > 0)
             sources.Add(new SourcesView(UnattributedLabel, SourceRows(stats.Get(null), GreyHex)));
@@ -302,17 +297,6 @@ public static class RecapBuilder
             .ThenBy(k => k.Kind, StringComparer.Ordinal)
             .ToList();
     }
-
-    /// <summary>Cards the player created during fights, most first.</summary>
-    private static List<CreatedCard> Created(PlayerTotals? totals) =>
-        totals == null
-            ? new List<CreatedCard>()
-            : totals.CardsCreated.Values
-                .Where(c => c.Amount > 0)
-                .OrderByDescending(c => c.Amount)
-                .ThenBy(c => c.Label, StringComparer.Ordinal)
-                .Select(c => new CreatedCard(c.Label, c.Amount))
-                .ToList();
 
     private static string? IconOf(PlayerInfo p) => string.IsNullOrEmpty(p.CharacterId) ? null : p.CharacterId;
 

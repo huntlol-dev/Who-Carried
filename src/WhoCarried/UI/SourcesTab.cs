@@ -96,15 +96,6 @@ internal static class SourcesTab
         Label none = k.Text(Loc.Text("WHO_CARRIED.empty.sources"), 16, RecapTheme.Muted);
         column.AddChild(none);
 
-        VBoxContainer created = k.Column(3);
-        created.AddChild(k.Gap(0, 12));
-        created.AddChild(k.Caps(Loc.Text("WHO_CARRIED.sources.created"), 12, RecapTheme.Muted, 1.5f, bold: true));
-        Label createdList = k.Text("", 15, RecapTheme.Text);
-        createdList.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        createdList.CustomMinimumSize = k.V(width, 0);
-        created.AddChild(createdList);
-        column.AddChild(created);
-
         var rows = new KeyedRows<(BarRow Row, int Max)>(column, r => RecapTexts.SourceKey(r.Row), r => Row(k, r, width, accent), offset: 2);
         void Apply((SourcesView Source, int Rank, int Max) it)
         {
@@ -113,8 +104,6 @@ internal static class SourcesTab
             total.Set(it.Source.Rows.Sum(r => r.Value));
             none.Visible = it.Source.Rows.Count == 0;
             rows.Sync(it.Source.Rows.Select(r => (r, it.Max)));
-            created.Visible = it.Source.CreatedCards.Count > 0;
-            createdList.Text = string.Join(", ", it.Source.CreatedCards.Select(c => $"{c.Label} ×{Kit.Num(c.Count)}"));
         }
         Apply(item);
         return (column, Apply);

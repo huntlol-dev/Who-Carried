@@ -62,7 +62,7 @@ internal static class RecapPanel
         tabs.AddChild(Safe(k, 1, pads[1], () => AwardsTab.Create(k, view, live)));
         tabs.AddChild(Safe(k, 2, pads[2], () => SourcesTab.Create(k, view, live, pads[2])));
         tabs.AddChild(Safe(k, 3, pads[3], () => DebuffsTab.Create(k, view, live, pads[3])));
-        tabs.AddChild(Safe(k, 4, pads[4], () => SupportTab.Create(k, view, live)));
+        tabs.AddChild(Safe(k, 4, pads[4], () => SupportTab.Create(k, view, live, pads[4])));
         tabs.AddChild(Safe(k, 5, pads[5], () => TimelineTab.Create(k, view, live, pads[5])));
         tabs.AddChild(Safe(k, 6, pads[6], () => DefenseTab.Create(k, view, live)));
         tabs.AddChild(Safe(k, 7, pads[7], () => DecksTab.Create(k, view, cards, live, pads[7])));

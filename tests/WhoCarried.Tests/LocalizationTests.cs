@@ -8,6 +8,19 @@ namespace WhoCarried.Tests;
 public static class LocalizationTests
 {
     [Test]
+    public static void CreationCopySeparatesAllOutputsFromRecordedGifts()
+    {
+        foreach (string language in new[] { "eng", "zhs" })
+        {
+            var catalog = Loc.Read(language);
+            foreach (string suffix in new[] { "created_heading", "created_count", "created_hint", "gifts_recorded", "gifts_history" })
+                Check.True(!string.IsNullOrWhiteSpace(catalog["WHO_CARRIED.support." + suffix]), language + " " + suffix);
+        }
+        Check.Equal("Recorded gifts", Loc.Read("eng")["WHO_CARRIED.support.gifts_recorded"], "history not invented");
+        Check.True(Loc.Read("eng")["WHO_CARRIED.empty.support"].StartsWith("Cards created"), "solo creation supported");
+    }
+
+    [Test]
     public static void CatalogsHaveMatchingKeysAndPlaceholders()
     {
         var english = Loc.Read("eng");
