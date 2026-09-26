@@ -55,7 +55,7 @@ internal static class EffectSources
 
         var clock = Stopwatch.StartNew();
         var harmony = new Harmony("whocarried.effects");
-        List<MethodInfo> hooks = TurnBoundaryHooks(Models.Types());
+        List<MethodInfo> hooks = TurnBoundaryHooks(Models.Types(), out int generic);
         int watched = Patch(harmony, hooks, nameof(EnterEffect), nameof(LeaveEffect));
         // The one-creature overload hands its creature to this one.
         MethodInfo? kill = AccessTools.Method(typeof(CreatureCmd), nameof(CreatureCmd.Kill),
@@ -71,18 +71,21 @@ internal static class EffectSources
             Enabled = pinned > 0;
             damage = $"{pinned}/{commands.Count} damage commands{(Enabled ? "" : " (OFF: none patched)")}";
         }
-        Tracker.Note($"effect sources: watching {watched}/{hooks.Count} turn-boundary hooks, kill command {(kills ? "on" : "OFF")}, " +
+        string leftAlone = generic > 0 ? $" ({generic} in generic classes left alone)" : "";
+        Tracker.Note($"effect sources: watching {watched}/{hooks.Count} turn-boundary hooks{leftAlone}, kill command {(kills ? "on" : "OFF")}, " +
                      $"{damage}, in {clock.ElapsedMilliseconds} ms");
     }
 
     /// <summary>
     /// Every turn-boundary hook some content overrides, where it's declared: an override a mod's shared base class makes
     /// once is one method, whichever content inherits it. The hooks are the ones every model has, and the ones only orbs
-    /// have (their turn-start and turn-end triggers).
+    /// have (their turn-start and turn-end triggers). Hooks declared in generic classes can't be patched without breaking
+    /// them (<see cref="HookPatching"/>): <paramref name="generic"/> counts those left alone.
     /// </summary>
-    private static List<MethodInfo> TurnBoundaryHooks(IEnumerable<Type> types)
+    private static List<MethodInfo> TurnBoundaryHooks(IEnumerable<Type> types, out int generic)
     {
         var found = new HashSet<MethodInfo>();
+        var shared = new HashSet<MethodInfo>();
         foreach (Type type in types)
         {
             if (type.IsAbstract || !typeof(AbstractModel).IsAssignableFrom(type)) continue;
@@ -93,7 +96,8 @@ internal static class EffectSources
                     if (method.IsAbstract || !method.IsVirtual || method.ContainsGenericParameters) continue;
                     if (method.ReturnType != typeof(Task) || HookBases.Contains(method.DeclaringType)) continue;
                     if (!EffectScopes.IsTurnBoundaryHook(method.Name) || !HookBases.Contains(method.GetBaseDefinition().DeclaringType)) continue;
-                    found.Add(Declared(method));
+                    MethodInfo declared = Declared(method);
+                    (HookPatching.CanWatch(declared) ? found : shared).Add(declared);
                 }
             }
             catch (Exception e)
@@ -101,6 +105,7 @@ internal static class EffectSources
                 Tracker.Note($"effect sources: can't look at {type.FullName}: {e.Message}");
             }
         }
+        generic = shared.Count;
         return found.ToList();
     }
 

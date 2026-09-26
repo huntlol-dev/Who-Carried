@@ -26,6 +26,7 @@ internal static class CardCreationSources
     internal static int Install(IEnumerable<Type> types, Action<string> log)
     {
         var methods = new HashSet<MethodInfo>();
+        var generic = new HashSet<MethodInfo>();
         MethodInfo? baseHook = typeof(AbstractModel).GetMethod(nameof(AbstractModel.AfterCardGeneratedForCombat),
             Instance, null, new[] { typeof(CardModel), typeof(Player) }, null);
         if (baseHook == null)
@@ -45,8 +46,10 @@ internal static class CardCreationSources
                     hook.ReturnType != typeof(Task) || hook.DeclaringType == typeof(AbstractModel) ||
                     hook.GetBaseDefinition() != baseHook) continue;
                 // Harmony must receive the declaring class's MethodInfo, not an inherited reflection wrapper.
-                methods.Add(hook.DeclaringType!.GetMethods(Instance | BindingFlags.DeclaredOnly)
-                    .Single(m => m.MetadataToken == hook.MetadataToken));
+                MethodInfo declared = hook.DeclaringType!.GetMethods(Instance | BindingFlags.DeclaredOnly)
+                    .Single(m => m.MetadataToken == hook.MetadataToken);
+                // A generic class's hook can't be patched without breaking it (see HookPatching).
+                (HookPatching.CanWatch(declared) ? methods : generic).Add(declared);
             }
             catch (Exception e)
             {
@@ -70,6 +73,7 @@ internal static class CardCreationSources
             }
         }
         log($"card creation: watching {watched}/{methods.Count} reaction hooks" +
+            (generic.Count > 0 ? $" ({generic.Count} in generic classes left alone)" : "") +
             (watched == 0 ? "; reaction correction unavailable" : ""));
         return watched;
     }
