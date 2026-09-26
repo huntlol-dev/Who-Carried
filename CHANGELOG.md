@@ -4,6 +4,11 @@
 
 ## [Unreleased]
 
+### Added
+
+- Deaths on each player's scoreboard card: a skull line counts how many times they died, the wipe that loses a run included. Winning or abandoning a run doesn't add one, and deaths from before this update can't be recovered.
+- Gold earned per player in the Decks tab and the exported image, from the game's own run history, so it's there for co-op guests and reloaded runs too.
+
 ### Changed
 
 - Cards created, including Souls, now appear in Support and the exported image, with recorded teammate gifts shown separately. Self-creation is visible in solo runs too.
