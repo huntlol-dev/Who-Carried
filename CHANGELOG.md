@@ -7,6 +7,7 @@
 ### Changed
 
 - Cards created, including Souls, now appear in Support and the exported image, with recorded teammate gifts shown separately. Self-creation is visible in solo runs too.
+- The Esc key beside Close on the recap's top bar can be clicked to close it, and lights gold on hover like the hotkey's key.
 
 ### Fixed
 
