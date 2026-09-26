@@ -69,6 +69,9 @@ public sealed class PlayerTotals
     /// <summary>Cards this player created during fights (Souls, Shivs…), by card.</summary>
     public Dictionary<string, SourceTotal> CardsCreated { get; set; } = new();
 
+    /// <summary>Recorded teammate gifts by generated card; older saves have no per-card gift history.</summary>
+    public Dictionary<string, SourceTotal> CardGifts { get; set; } = new();
+
     /// <summary>What enemy debuffs on this player cost them, by effect and power.</summary>
     public Dictionary<string, CostTotal> DebuffCosts { get; set; } = new();
 
@@ -248,6 +251,16 @@ public sealed class RunStats
     {
         if (count <= 0) return;
         Entry(GetOrAdd(KeyFor(playerId)).CardsCreated, card).Amount += count;
+    }
+
+    /// <summary>One output, counted once as creation and, when appropriate, once in its gift subset.</summary>
+    public void RecordCardGeneration(ulong contributor, ulong? recipient, SourceRef card, int count = 1)
+    {
+        if (count <= 0) return;
+        RecordCardCreated(contributor, card, count);
+        if (recipient is not ulong to || contributor == to) return;
+        Entry(GetOrAdd(KeyFor(contributor)).CardGifts, card).Amount += count;
+        RecordSupport(contributor, to, SupportKind.Cards, count);
     }
 
     /// <summary>
