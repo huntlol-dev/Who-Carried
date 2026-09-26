@@ -19,6 +19,7 @@ public static class ModEntry
     {
         typeof(AfterDamageGivenPatch),
         typeof(DoomKillPatch),
+        typeof(AfterDeathPatch),
         typeof(AfterPowerAmountChangedPatch),
         typeof(BeforeDamageReceivedPatch),
         typeof(ModifyDamagePatch),

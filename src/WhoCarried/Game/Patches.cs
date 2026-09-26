@@ -162,6 +162,23 @@ internal static class DoomKillPatch
     }
 }
 
+/// <summary>
+/// Every creature's death once the game has decided on it. <c>wasRemovalPrevented</c> is true when something stopped
+/// the death (Fairy in a Bottle); pets and enemies aren't players. What's left is a player dying.
+/// </summary>
+[HarmonyPatch(typeof(Hook), nameof(Hook.AfterDeath))]
+internal static class AfterDeathPatch
+{
+    private static void Prefix(Creature creature, bool wasRemovalPrevented)
+    {
+        try
+        {
+            if (!wasRemovalPrevented && creature.IsPlayer && creature.Player is Player player) Tracker.OnPlayerDied(player);
+        }
+        catch (Exception e) { Tracker.LogError("AfterDeath", e); }
+    }
+}
+
 [HarmonyPatch(typeof(Hook), nameof(Hook.BeforeCombatStart))]
 internal static class BeforeCombatStartPatch
 {

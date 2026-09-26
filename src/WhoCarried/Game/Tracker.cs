@@ -576,6 +576,23 @@ internal static class Tracker
     }
 
     /// <summary>
+    /// A player died: a real death, not one something like Fairy in a Bottle stopped. Counted straight away, the wipe
+    /// that loses a run included. To end a run that's over, the game kills every player: after the Architect win,
+    /// which has already reported the run's end, and when abandoning, which is marked first. Those aren't deaths.
+    /// </summary>
+    public static void OnPlayerDied(Player player)
+    {
+        if (_stats.Finished || RunManager.Instance.IsAbandoned)
+        {
+            _log?.Write($"{Where} {NameOf(player.NetId)} killed as the run ends, not counted");
+            return;
+        }
+        _stats.RecordDeath(player.NetId);
+        _log?.Write($"{Where} {NameOf(player.NetId)} {LogReplay.Died}");
+        Touch();
+    }
+
+    /// <summary>
     /// The fight is over: the lows of everyone still standing count. Used up once counted, since a won run commits the
     /// last fight's lows before that fight's own end comes.
     /// </summary>
