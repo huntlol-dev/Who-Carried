@@ -64,7 +64,8 @@ internal static class DecksTab
             {
                 counts.AddChild(k.Gap(6, 0));
                 HBoxContainer gold = k.Row(5);
-                gold.AddChild(Kit.Center(k.Pic(GameArt.Get(GameArt.Gold), 22, 22)));
+                // The game's coin is a white text glyph, tinted by the text around it.
+                gold.AddChild(Kit.Center(k.Pic(GameArt.Get(GameArt.Gold), 22, 22, RecapTheme.Gold)));
                 gold.AddChild(Kit.Center(k.Text(Loc.Text("WHO_CARRIED.decks.gold", Kit.Num(deck.Gold)), 18, RecapTheme.Gold, true, Ink.Soft)));
                 counts.AddChild(Kit.Center(gold));
             }
@@ -253,7 +254,7 @@ internal static class DecksTab
         if (deck.Gold > 0)
         {
             HBoxContainer gold = k.Row(4);
-            gold.AddChild(Kit.Center(k.Pic(GameArt.Get(GameArt.Gold), 15, 15)));
+            gold.AddChild(Kit.Center(k.Pic(GameArt.Get(GameArt.Gold), 15, 15, RecapTheme.Gold)));
             gold.AddChild(Kit.Center(k.Text(Loc.Text("WHO_CARRIED.decks.gold", Kit.Num(deck.Gold)), 14, RecapTheme.Gold)));
             column.AddChild(gold);
         }
