@@ -127,8 +127,6 @@
   "WHO_CARRIED.stat.bonus_amount": "额外伤害 +{0}",
   "WHO_CARRIED.stat.damage": "造成伤害",
   "WHO_CARRIED.stat.damage_amount": "{0} 伤害",
-  "WHO_CARRIED.stat.deaths": "阵亡 {0} 次",
-  "WHO_CARRIED.stat.deaths_one": "阵亡 1 次",
   "WHO_CARRIED.stat.team": "全队",
   "WHO_CARRIED.stat.team_damage": "全队伤害",
   "WHO_CARRIED.summary.biggest_fight": "伤害最高的战斗",

@@ -127,8 +127,6 @@
   "WHO_CARRIED.stat.bonus_amount": "+{0} bonus damage",
   "WHO_CARRIED.stat.damage": "Damage dealt",
   "WHO_CARRIED.stat.damage_amount": "{0} dmg",
-  "WHO_CARRIED.stat.deaths": "Died {0} times",
-  "WHO_CARRIED.stat.deaths_one": "Died once",
   "WHO_CARRIED.stat.team": "Team",
   "WHO_CARRIED.stat.team_damage": "Team damage",
   "WHO_CARRIED.summary.biggest_fight": "Biggest fight",

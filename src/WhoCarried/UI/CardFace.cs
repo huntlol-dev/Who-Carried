@@ -27,11 +27,18 @@ internal sealed class CardFace
     /// <summary>How far the portrait is zoomed: 1 fills the picture window (cropping), 0 shows all of it.</summary>
     public const float PortraitZoom = 0.8f;
 
+    /// <summary>The corner count's padding, in ems (its border is drawn inside it).</summary>
+    private const float TallyPadX = 0.32f, TallyPadY = 0.18f;
+
     private readonly Kit _k;
     private readonly float _w, _h, _em;
     private readonly Label _gemText;
     private readonly PanelContainer _plaque;
     private readonly Label _plaqueText;
+    private readonly PanelContainer _tally;
+    private readonly TextureRect _tallyIcon;
+    private readonly Label _tallyText;
+    private readonly Control _tallyHolder;
     private readonly Label _banner;
     private readonly HBoxContainer _badges;
     private readonly Control? _foil, _glow;
@@ -103,6 +110,20 @@ internal sealed class CardFace
         _plaque.AddChild(_plaqueText);
         Root.AddChild(_plaque);
         SetPlaque(spec.Plaque);
+
+        // A small count on the picture's lower-left corner (a player's deaths). The left, because in a fanned hand the
+        // next card covers each card's right side; above the plaque's row, so a long award can't run into it.
+        _tally = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore, Visible = false };
+        _tally.AddThemeStyleboxOverride("panel", RecapTheme.Box(new Color(RecapTheme.Plaque, 0.92f), k.U(_em * 0.8f),
+            RecapTheme.TallyEdge, k.U(Math.Max(1.2f, _em * 0.09f)), k.U(_em * TallyPadX), k.U(_em * TallyPadY)));
+        HBoxContainer tally = k.Row(_em * 0.2f);
+        _tallyIcon = k.Pic(null, _em, _em);
+        tally.AddChild(Kit.Center(_tallyIcon));
+        _tallyText = k.Text("", _em * 0.92f, RecapTheme.TallyText, true, Ink.Soft);
+        _tallyHolder = Kit.Tight(_tallyText);
+        tally.AddChild(Kit.Center(_tallyHolder));
+        _tally.AddChild(tally);
+        Root.AddChild(_tally);
 
         Body = k.Column(0);
         Body.Alignment = BoxContainer.AlignmentMode.Center;
@@ -213,6 +234,20 @@ internal sealed class CardFace
         float width = Kit.Measure(_plaqueText) + 2 * _k.U(_em * 0.9f) + 2 * _k.U(Math.Max(1.2f, _em * 0.12f));
         _plaque.Size = Vector2.Zero;
         _plaque.Position = new Vector2((_k.U(_w) - width) / 2, _k.U(_h * 0.465f) - _k.U(_em * 0.2f));
+    }
+
+    /// <summary>The count in the picture's lower-left corner, with its icon; "" hides it.</summary>
+    public void SetTally(Texture2D? icon, string text)
+    {
+        _tallyIcon.Texture = Kit.Alive(icon);
+        _tallyText.Text = text;
+        Kit.Retight(_tallyText, _tallyHolder);
+        _tally.Visible = text.Length > 0;
+        // Placed by hand, like the plaque. The icon is its tallest part, so its height is known before layout.
+        float height = _k.U(_em) + 2 * _k.U(_em * TallyPadY);
+        float bottom = _k.U(_h * 0.465f) - _k.U(_em * 0.45f);
+        _tally.Size = Vector2.Zero;
+        _tally.Position = new Vector2(_k.U(_w * 0.09f + _em * 0.45f), bottom - height);
     }
 
     public void SetBadges(IReadOnlyList<BadgeInfo> badges)

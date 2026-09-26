@@ -107,8 +107,8 @@ internal static class ScoreboardTab
     {
         private readonly Kit _k;
         private readonly LiveNumber _number;
-        private readonly Label _share, _block, _bonusValue, _bonusText, _deathsText;
-        private readonly Control _shareChip, _bonusLine, _deathsLine;
+        private readonly Label _share, _block, _bonusValue, _bonusText;
+        private readonly Control _shareChip, _bonusLine;
         private readonly bool _solo;
 
         /// <param name="foilAt">Holds the leader's foil still (the saved image); -1 animates it.</param>
@@ -138,7 +138,7 @@ internal static class ScoreboardTab
             chips.AddChild(_shareChip);
             (Control blockChip, _block) = Chip(GameArt.Get(GameArt.Block), RecapTheme.Green, "");
             chips.AddChild(blockChip);
-            body.AddChild(Pad(chips, em * 0.4f));
+            body.AddChild(Pad(chips, em * 0.7f));
 
             HBoxContainer bonus = k.Row(em * 0.3f);
             bonus.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
@@ -156,17 +156,8 @@ internal static class ScoreboardTab
                 bonus.AddChild(Kit.Center(_bonusValue));
                 bonus.AddChild(Kit.Center(_bonusText));
             }
-            _bonusLine = Pad(bonus, em * 0.25f);
+            _bonusLine = Pad(bonus, em * 0.45f);
             body.AddChild(_bonusLine);
-
-            // Times this player died, under the bonus damage; hidden for a player who never went down.
-            HBoxContainer deaths = k.Row(em * 0.3f);
-            deaths.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
-            deaths.AddChild(Kit.Center(k.Pic(GameArt.Get(GameArt.Skull), em * 1.2f, em * 1.2f)));
-            _deathsText = k.Text("", em * 0.92f, new Color("e8e2d4"));
-            deaths.AddChild(Kit.Center(_deathsText));
-            _deathsLine = Pad(deaths, em * 0.25f);
-            body.AddChild(_deathsLine);
         }
 
         public CardFace Face { get; }
@@ -180,6 +171,8 @@ internal static class ScoreboardTab
             _number.Set(row.Value);
             Face.SetGemText((rank + 1).ToString());
             Face.SetPlaque(row.Award.Length == 0 ? "" : Loc.Text(row.Award));
+            // Deaths as a skull and a count on the picture, so the text box below stays the same with or without them.
+            Face.SetTally(GameArt.Get(GameArt.Skull), row.Deaths > 0 ? Kit.Num(row.Deaths) : "");
             Face.SetBadges(row.BadgeList);
             _share.Text = row.Share is double s ? $"{Math.Round(s * 100):0}%" : "";
             _shareChip.Visible = n > 1;
@@ -197,10 +190,6 @@ internal static class ScoreboardTab
                 _bonusText.Text = Loc.Text("WHO_CARRIED.stat.bonus_amount", Kit.Num(row.Bonus));
                 _bonusLine.Visible = row.Bonus > 0;
             }
-            _deathsText.Text = row.Deaths == 1
-                ? Loc.Text("WHO_CARRIED.stat.deaths_one")
-                : Loc.Text("WHO_CARRIED.stat.deaths", Kit.Num(row.Deaths));
-            _deathsLine.Visible = row.Deaths > 0;
             Face.SetLeader(rank == 0);
         }
 

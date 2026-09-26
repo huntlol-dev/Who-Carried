@@ -47,6 +47,10 @@ internal static class RecapTheme
     public static readonly Color TipEdge = new("3f5064");
     public static readonly Color Plaque = new("1c160f");
 
+    // A card's corner count (deaths): muted, so it doesn't read as a second award.
+    public static readonly Color TallyEdge = new("9a9486");
+    public static readonly Color TallyText = new("e8e2d4");
+
     /// <summary>Kept for the deck's text tiles (cards the game can't draw).</summary>
     public static readonly Color Inset = new("1a2230");
 
