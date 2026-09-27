@@ -236,6 +236,10 @@ internal static class RecapUi
     {
         if (_copying) return;
         _copying = true;
+        // The last copy's Copied look ends now, not two seconds after it started: kept, it would sit through this
+        // copy's "Copying...", and beside the failure message if this one fails.
+        ++_copiedVersion;
+        if (GodotObject.IsInstanceValid(handle.Root)) handle.ShowCopied(false);
         SetStatus(handle, Loc.Text("WHO_CARRIED.copy.copying"));
         void Failed(string? reason)
         {
