@@ -750,4 +750,30 @@ internal static class Tracker
         RecordHit(player, source.Source, 0, removed, target, remover, context);
         Touch();
     }
+
+    /// <summary>
+    /// An enemy's HP set lower without a hit (Fur Coat starting it at 1): HP cut, credited to the effect's player and kept
+    /// apart from damage. The effect is the one running a watched hook; failing that, the game content up the call
+    /// stack, if exactly one player holds a relic of that kind.
+    /// </summary>
+    public static void OnHpSet(Creature creature, decimal amount)
+    {
+        if (!creature.IsEnemy || creature.IsDead || FactsExtractor.HpInfinite(creature)) return;
+        int cut = HpCut.Amount(creature.CurrentHp, amount);
+        if (cut <= 0) return;
+        SourceCandidate? by = EffectSources.Running is AbstractModel running ? FactsExtractor.Candidate(running) : null;
+        if (by?.OwnerId == null && SelfFire.Caller() is RelicModel kind && _run != null)
+        {
+            List<RelicModel> held = _run.Players.SelectMany(p => p.Relics).Where(r => r.GetType() == kind.GetType()).ToList();
+            if (held.Count == 1) by = FactsExtractor.Candidate(held[0]);
+        }
+        if (by?.OwnerId is not ulong player)
+        {
+            _log?.Write($"{Where} {Describe(creature)} hp set {creature.CurrentHp} -> {amount}, no player behind it");
+            return;
+        }
+        _stats.RecordHpCut(player, by.Source, cut);
+        _log?.Write($"{Where} " + LogReplay.HpCutLine(NameOf(player), by.Source, cut, Describe(creature)));
+        Touch();
+    }
 }

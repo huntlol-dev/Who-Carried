@@ -297,3 +297,14 @@ internal static class LoseBlockPatch
         catch (Exception e) { Tracker.LogError("LoseBlock", e); }
     }
 }
+
+/// <summary>HP set directly rather than by a hit (Fur Coat). Before it changes, so the old HP is still there.</summary>
+[HarmonyPatch(typeof(CreatureCmd), nameof(CreatureCmd.SetCurrentHp))]
+internal static class SetCurrentHpPatch
+{
+    private static void Prefix(Creature creature, decimal amount)
+    {
+        try { Tracker.OnHpSet(creature, amount); }
+        catch (Exception e) { Tracker.LogError("SetCurrentHp", e); }
+    }
+}
