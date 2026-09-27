@@ -1,4 +1,5 @@
 using System.Reflection;
+using MegaCrit.Sts2.Core.Commands;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -277,5 +278,16 @@ internal static class TopBarNavigationPatch
     {
         try { TopBarButton.JoinNavigation(__instance); }
         catch (Exception e) { Tracker.LogError("NTopBar.UpdateNavigation", e); }
+    }
+}
+
+/// <summary>Block taken off without a hit (Expose). Read before it goes, so the enemy's block is still there to measure.</summary>
+[HarmonyPatch(typeof(CreatureCmd), nameof(CreatureCmd.LoseBlock))]
+internal static class LoseBlockPatch
+{
+    private static void Prefix(PlayerChoiceContext choiceContext, Creature target, decimal amount, Creature? remover)
+    {
+        try { Tracker.OnBlockStripped(choiceContext, target, amount, remover); }
+        catch (Exception e) { Tracker.LogError("LoseBlock", e); }
     }
 }

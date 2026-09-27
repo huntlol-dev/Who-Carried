@@ -718,4 +718,18 @@ internal static class Tracker
             foreach ((ulong player, int share) in DebuffBonusTracker.Share(power, byPart[i])) yield return (power, player, share);
         }
     }
+
+    /// <summary>
+    /// A player stripping an enemy's block without hitting it (Expose): counted as block knocked off, under whatever
+    /// started it. Enemies stripping their own block name no player and aren't counted.
+    /// </summary>
+    public static void OnBlockStripped(PlayerChoiceContext? context, Creature target, decimal amount, Creature? remover)
+    {
+        if (!target.IsEnemy || target.IsDead || FactsExtractor.HpInfinite(target) || FactsExtractor.PlayerIdOf(remover) is not ulong player) return;
+        int removed = BlockStrip.Removed(amount, target.Block);
+        if (removed <= 0) return;
+        SourceRef source = FactsExtractor.StackTop(context)?.Source ?? SourceRef.Unknown;
+        RecordHit(player, source, 0, removed, target, remover, context);
+        Touch();
+    }
 }

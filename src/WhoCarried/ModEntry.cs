@@ -26,6 +26,7 @@ public static class ModEntry
         typeof(ModifyHpLostPatch),
         typeof(BeforeBlockGainedPatch),
         typeof(AfterBlockGainedPatch),
+        typeof(LoseBlockPatch),
         typeof(GainEnergyPatch),
         typeof(AfterCardDrawnPatch),
         typeof(CardGeneratedPatch),
