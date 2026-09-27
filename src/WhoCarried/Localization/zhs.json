@@ -113,6 +113,7 @@
   "WHO_CARRIED.sources.cards": "卡牌",
   "WHO_CARRIED.sources.heading": "伤害构成",
   "WHO_CARRIED.sources.heading_hint": "按来源类别统计每次伤害",
+  "WHO_CARRIED.sources.hp_cut": "{0}使敌人的生命值减少了{1}。不计入伤害。",
   "WHO_CARRIED.sources.more": "{0} 等 {1} 个其他来源",
   "WHO_CARRIED.sources.orbs": "充能球",
   "WHO_CARRIED.sources.other": "其他来源",

@@ -113,6 +113,7 @@
   "WHO_CARRIED.sources.cards": "Cards",
   "WHO_CARRIED.sources.heading": "Where it came from",
   "WHO_CARRIED.sources.heading_hint": "every hit, by kind",
+  "WHO_CARRIED.sources.hp_cut": "{0} cut enemies' HP by {1}. Not counted as damage.",
   "WHO_CARRIED.sources.more": "{0} and {1} more",
   "WHO_CARRIED.sources.orbs": "Orbs",
   "WHO_CARRIED.sources.other": "Everything else",

@@ -38,6 +38,11 @@ public static class LogReplay
     private static readonly Regex RunEnded = new(Where + @"run ended: (victory|defeat)", RegexOptions.Compiled);
     private static readonly Regex HpLow = new(Where + @"(.+?) hp low (\d+)/(\d+)$", RegexOptions.Compiled);
     private static readonly Regex Badge = new(Where + @"(.+?) badge (\S+) \((\w+)\)$", RegexOptions.Compiled);
+    private static readonly Regex HpCutRx = new(Where + @"(.+?) cut (\d+) hp with (\w+):(\S+) \((.*)\) \| target ", RegexOptions.Compiled);
+
+    /// <summary>HP a player's effect cut from an enemy without a hit (after its "[F.. A..] " prefix); never a hit line.</summary>
+    public static string HpCutLine(string who, SourceRef source, int hp, string target) =>
+        $"{who} cut {hp} hp with {source.Kind}:{source.Id} ({source.Label}) | target {target}";
 
     /// <summary>The word after a player's name on a death that counts (see <see cref="RunStats.RecordDeath"/>).</summary>
     public const string Died = "died";
@@ -126,6 +131,11 @@ public static class LogReplay
             {
                 SourceRef source = Source(m.Groups[4].Value, m.Groups[5].Value, m.Groups[6].Value, "", title);
                 stats.RecordDamage(Who(m.Groups[3].Value), source, Int(m.Groups[7]));
+            }
+            else if ((m = HpCutRx.Match(line)).Success)
+            {
+                if (Who(m.Groups[3].Value) is ulong id)
+                    stats.RecordHpCut(id, Source(m.Groups[5].Value, m.Groups[6].Value, m.Groups[7].Value, "", title), Int(m.Groups[4]));
             }
             else if ((m = Applied.Match(line)).Success)
             {

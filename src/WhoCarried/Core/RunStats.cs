@@ -66,6 +66,12 @@ public sealed class PlayerTotals
     /// <summary>HP this player's debuffs (Weak, Strength loss) kept off the team, themselves included, by power.</summary>
     public Dictionary<string, SourceTotal> DebuffPrevented { get; set; } = new();
 
+    /// <summary>
+    /// HP this player's relics or effects took off enemies by setting it directly (Fur Coat), by source. Never damage:
+    /// shown on its own line.
+    /// </summary>
+    public Dictionary<string, SourceTotal> HpCut { get; set; } = new();
+
     /// <summary>Cards this player created during fights (Souls, Shivs…), by card.</summary>
     public Dictionary<string, SourceTotal> CardsCreated { get; set; } = new();
 
@@ -258,6 +264,13 @@ public sealed class RunStats
     {
         if (hp <= 0) return;
         Entry(GetOrAdd(KeyFor(playerId)).DebuffPrevented, debuff).Amount += hp;
+    }
+
+    /// <summary>HP a player's effect took off an enemy without a hit (see <see cref="PlayerTotals.HpCut"/>).</summary>
+    public void RecordHpCut(ulong playerId, SourceRef source, int hp)
+    {
+        if (hp <= 0) return;
+        Entry(GetOrAdd(KeyFor(playerId)).HpCut, source).Amount += hp;
     }
 
     public void RecordCardCreated(ulong playerId, SourceRef card, int count = 1)

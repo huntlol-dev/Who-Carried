@@ -27,8 +27,13 @@ public sealed record CardGiftRow(ulong PlayerId, string Label, string ColorHex, 
 /// <summary>A player's damage from one kind of source ("Card", "Orb", "Relic", … "Other"), with its biggest source.</summary>
 public sealed record KindTotal(string Kind, int Amount, int Sources, string TopLabel, string? TopArtKey);
 
+/// <summary>One source of HP a player's effects cut from enemies without hitting them.</summary>
+public sealed record HpCutPart(string Label, int Amount);
+
+/// <param name="HpCuts">HP the player's effects cut without hitting (Fur Coat), biggest first; never damage.</param>
 public sealed record SourcesView(string PlayerLabel, IReadOnlyList<BarRow> Rows, string ColorHex = RecapBuilder.GreyHex,
-                                 string? IconKey = null, IReadOnlyList<KindTotal>? Kinds = null)
+                                 string? IconKey = null, IReadOnlyList<KindTotal>? Kinds = null,
+                                 IReadOnlyList<HpCutPart>? HpCuts = null)
 {
     /// <summary>Damage by kind of source, biggest first (every source counted, not just the top few).</summary>
     public IReadOnlyList<KindTotal> KindTotals => Kinds ?? Array.Empty<KindTotal>();
@@ -155,10 +160,10 @@ public static class RecapBuilder
 
         var sources = byDamage
             .Select(p => new SourcesView($"{p.Name} · {p.Character}", SourceRows(stats.Get(p.NetId), p.ColorHex),
-                p.ColorHex, IconOf(p), Kinds(stats.Get(p.NetId))))
+                p.ColorHex, IconOf(p), Kinds(stats.Get(p.NetId)), Cuts(stats.Get(p.NetId))))
             .ToList();
         if (unattributed > 0)
-            sources.Add(new SourcesView(UnattributedLabel, SourceRows(stats.Get(null), GreyHex)));
+            sources.Add(new SourcesView(UnattributedLabel, SourceRows(stats.Get(null), GreyHex), HpCuts: Cuts(stats.Get(null))));
 
         var timeline = players
             .Select(p => new TimelineSeries(p.Name, p.ColorHex,
@@ -212,6 +217,17 @@ public static class RecapBuilder
             })
             .OrderBy(b => b.RarityOrder)
             .ToList();
+
+    private static IReadOnlyList<HpCutPart> Cuts(PlayerTotals? t) => t == null
+        ? Array.Empty<HpCutPart>()
+        : t.HpCut.Values.Where(c => c.Amount > 0).OrderByDescending(c => c.Amount).ThenBy(c => c.Label, StringComparer.Ordinal)
+            .Select(c => new HpCutPart(c.Label, c.Amount)).ToList();
+
+    /// <summary>"Fur Coat cut enemies' HP by 312. Not counted as damage." Empty when there's none.</summary>
+    public static string HpCutText(IReadOnlyList<HpCutPart> cuts) => cuts.Count == 0
+        ? ""
+        : Loc.Text("WHO_CARRIED.sources.hp_cut", JoinAnd(cuts.Select(c => c.Label).ToList()),
+            cuts.Sum(c => c.Amount).ToString("N0", CultureInfo.InvariantCulture));
 
     /// <summary>"A", "A and B", "A, B and C".</summary>
     public static string JoinAnd(IReadOnlyList<string> words) => words.Count switch
