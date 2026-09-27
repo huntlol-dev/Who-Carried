@@ -145,8 +145,8 @@ internal static class RecapPanel
         row.Size = new Vector2(screenWidth - 2 * (stageLeft + k.U(30)), k.U(68));
         bar.AddChild(row);
         // Sized properly once Close is placed: see the end of this method. The row's last child is the status label,
-        // which right-aligns to the row's edge — left at full width it runs under Close, and every export message
-        // loses its tail.
+        // which takes the room left and right-aligns to the row's edge — left at full width it runs under Close, and
+        // every export message loses its tail.
 
         HBoxContainer title = k.Row(0);
         title.AddChild(Kit.Center(k.Strong(RecapTexts.ModName + " · ", 30)));
@@ -178,7 +178,13 @@ internal static class RecapPanel
         hotkey = new HotkeyLine(cap, keyText, keyHint, look => HewnStone.Dress(cap, k, look));
         if (HotkeyBinding.Name == null) hotkey.Look(HewnStone.CapLook.Unbound);
 
-        row.AddChild(Kit.Fill());
+        // The status fills the room the readouts leave, its words against the row's right edge, and wraps onto a second
+        // line when a message is longer than that room. On one line it had to be as wide as its message, so a long one
+        // (a failed copy's) widened the row past its edge and ran under Close. Wrapped, it needs no width of its own,
+        // and nothing to its left moves.
+        status.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        status.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        status.HorizontalAlignment = HorizontalAlignment.Right;
         row.AddChild(Kit.Center(status));
 
         // Close is a word, not a stone: it is the one control nobody hunts for, and the key beside it already does the
