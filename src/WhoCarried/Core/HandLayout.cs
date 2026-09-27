@@ -115,6 +115,17 @@ public static class HandLayout
         return PreferredTop + Math.Max(0f, TabsBottom + TabGap - highest);
     }
 
+    /// <summary>
+    /// The top for a hand of <paramref name="n"/> cards at rest that sits as high as it can with every card and gem at or
+    /// below <paramref name="line"/>: the copied picture's hand, which has no tabs to clear and never hovers.
+    /// </summary>
+    public static float TopBelow(float line, int n, float handWidth)
+    {
+        (float w, Slot[] slots) = Layout(n, handWidth, PreferredTop);
+        float highest = slots.Min(s => Reach(w, s, hovered: false));
+        return PreferredTop + (line - highest);
+    }
+
     private static (float Sin, float Cos) SinCos(float degrees)
     {
         double radians = degrees * Math.PI / 180;

@@ -62,6 +62,18 @@ public static class HandLayoutTests
     }
 
     [Test]
+    public static void TheCopiedPicturesHandSitsJustBelowItsBar()
+    {
+        const float line = ShareLayout.BarHeight + ShareLayout.HandGap;
+        for (int n = 1; n <= 5; n++)
+        {
+            float top = HandLayout.TopBelow(line, n, 1200);
+            Check.Near(line, Highest(n, top, hovered: false), $"{n} players: the highest card or gem is on the line", tolerance: 0.01);
+            Check.True(top < HandLayout.TopClearOfTabs(n, 1200), $"{n} players: higher than in the recap, which has tabs to clear");
+        }
+    }
+
+    [Test]
     public static void AHoveredCardRisesAndGrowsRoundItsMiddle()
     {
         (float w, HandLayout.Slot[] slots) = HandLayout.Layout(4, 1200, HandLayout.PreferredTop);
