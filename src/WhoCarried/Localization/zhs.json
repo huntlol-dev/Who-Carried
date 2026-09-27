@@ -151,6 +151,7 @@
   "WHO_CARRIED.summary.won": "在第 {1} 层击败{0}，{3}共造成 {2} 点伤害。",
   "WHO_CARRIED.summary.your_run": "本局战绩",
   "WHO_CARRIED.support.block": "格挡",
+  "WHO_CARRIED.support.block_given": "给予格挡",
   "WHO_CARRIED.support.buffs": "增益层数",
   "WHO_CARRIED.support.cards": "卡牌",
   "WHO_CARRIED.support.created_count": "生成数量",

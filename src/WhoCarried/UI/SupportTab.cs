@@ -51,14 +51,18 @@ internal static class SupportTab
         return tab;
     }
 
-    /// <summary>One kind of help: its name, colour, value, and the award its leader can win.</summary>
-    private sealed record Kind(string Words, Color Tone, Func<SupportRow, int> Value, string Award);
+    /// <summary>
+    /// One kind of help: its name, colour, value, and the award its leader can win; and the name it goes by on the
+    /// copied picture, when that differs.
+    /// </summary>
+    private sealed record Kind(string Words, Color Tone, Func<SupportRow, int> Value, string Award, string? GivenWords = null);
 
     private static readonly Kind[] Kinds =
     {
         new("WHO_CARRIED.support.energy", RecapTheme.Gold, r => r.Energy, AwardBuilder.Battery),
         new("WHO_CARRIED.support.cards", RecapTheme.Text, r => r.Cards, AwardBuilder.CarePackage),
-        new("WHO_CARRIED.support.block", RecapTheme.Blocked, r => r.Block, AwardBuilder.Bodyguard),
+        // On the copied picture the scoreboard cards' own Block chip (enemy block knocked off) sits just above.
+        new("WHO_CARRIED.support.block", RecapTheme.Blocked, r => r.Block, AwardBuilder.Bodyguard, "WHO_CARRIED.support.block_given"),
         new("WHO_CARRIED.support.buffs", RecapTheme.Taken, r => r.Buffs, AwardBuilder.Coach),
         new("WHO_CARRIED.support.draws", RecapTheme.Teal, r => r.Draws, AwardBuilder.Playmaker),
     };
@@ -76,9 +80,11 @@ internal static class SupportTab
 
     /// <summary>
     /// The cards in a grid, in the order of <see cref="Kinds"/>. Compact (the saved image) drops the award line and uses
-    /// one row of cards across.
+    /// one row of cards across. The copied picture keeps the tab's sizes, but drops the award line
+    /// (<paramref name="showAwards"/>) and names a kind as given where that reads better (<paramref name="givenTitles"/>).
     /// </summary>
-    public static Control Cards(Kit k, RecapView view, float width, int columns, Live? live, bool compact = false)
+    public static Control Cards(Kit k, RecapView view, float width, int columns, Live? live, bool compact = false,
+                                bool showAwards = true, bool givenTitles = false)
     {
         float gap = compact ? 12 : 18;
         var grid = new GridContainer { Columns = columns, MouseFilter = Control.MouseFilterEnum.Ignore };
@@ -109,7 +115,7 @@ internal static class SupportTab
             }
             foreach (Kind kind in Kinds.Where(kind => Givers(v, kind).Count > 0))
             {
-                (Control card, Action<RecapView> update) = Card(k, v, kind, cardW, compact);
+                (Control card, Action<RecapView> update) = Card(k, v, kind, cardW, compact, showAwards, givenTitles);
                 grid.AddChild(card);
                 updaters.Add(update);
             }
@@ -119,7 +125,8 @@ internal static class SupportTab
         return grid;
     }
 
-    private static (Control, Action<RecapView>) Card(Kit k, RecapView view, Kind kind, float width, bool compact)
+    private static (Control, Action<RecapView>) Card(Kit k, RecapView view, Kind kind, float width, bool compact, bool showAwards,
+                                                     bool givenTitles)
     {
         List<SupportRow> givers = Givers(view, kind);
         PanelContainer tip = compact ? k.Tip(10, 8) : k.Tip(16, 12);
@@ -131,7 +138,8 @@ internal static class SupportTab
         float art = compact ? 20 : 34;
         // The same picture as the kind's award; energy wears the gem of whoever gave the most.
         title.AddChild(Kit.Center(k.Pic(RecapTexts.AwardArt(k, kind.Award, givers[0].IconKey), art, art)));
-        Label name = k.Text(Loc.Text(kind.Words), compact ? 14 : 22, kind.Tone, true, Ink.Soft);
+        Label name = k.Text(Loc.Text(givenTitles && kind.GivenWords != null ? kind.GivenWords : kind.Words), compact ? 14 : 22,
+            kind.Tone, true, Ink.Soft);
         name.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         name.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
         title.AddChild(Kit.Center(name));
@@ -144,7 +152,7 @@ internal static class SupportTab
         Label awardName = k.Text("", 14, RecapTheme.Gold, true), awardWinner = k.Text("", 14, RecapTheme.Muted, true);
         awardLine.AddChild(awardName);
         awardLine.AddChild(awardWinner);
-        if (!compact) column.AddChild(awardLine);
+        if (!compact && showAwards) column.AddChild(awardLine);
 
         float icon = compact ? 16 : 22, who = compact ? 62 : 104, amount = compact ? 30 : 48;
         var bars = new List<(LiveNumber Amount, LiveBar Bar)>();

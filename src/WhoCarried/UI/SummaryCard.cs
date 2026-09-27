@@ -107,13 +107,15 @@ internal static class SummaryCard
     }
 
     /// <summary>The game's top bar: "Who Carried? · Victory", floor, time, ascension, team damage, and the date.</summary>
-    private static Control TopBar(Kit k, RecapView view, DateTime date)
+    /// <param name="width">The bar's design width: the exported image's, or the copied picture's.</param>
+    /// <param name="party">The party's coins after the numbers, as the recap's own bar has them (the copied picture).</param>
+    internal static Control TopBar(Kit k, RecapView view, DateTime date, float width = Width, bool party = false)
     {
-        Control bar = k.Box(Width, 78);
-        if (GameArt.Get(GameArt.TopBar) is Texture2D art) bar.AddChild(k.Stretch(art, Width, 78));
-        else bar.AddChild(k.Swatch(new Color("1b2635"), Width, 78, 0));
+        Control bar = k.Box(width, 78);
+        if (GameArt.Get(GameArt.TopBar) is Texture2D art) bar.AddChild(k.Stretch(art, width, 78));
+        else bar.AddChild(k.Swatch(new Color("1b2635"), width, 78, 0));
         HBoxContainer row = k.Row(24);
-        bar.AddChild(k.At(row, 30, 0, Width - 60, 72));
+        bar.AddChild(k.At(row, 30, 0, width - 60, 72));
         HBoxContainer title = k.Row(0);
         title.AddChild(Kit.Center(k.Strong(RecapTexts.ModName + " · ", 32)));
         (string result, Color tone) = RecapTexts.Result(view);
@@ -132,6 +134,13 @@ internal static class SummaryCard
         Stat(GameArt.Get(GameArt.Timer), RecapTexts.Duration(view.Facts?.Seconds ?? 0));
         Stat(GameArt.Get(GameArt.Ascension), (view.Facts?.Ascension ?? 0) > 0 ? view.Facts!.Ascension.ToString(CultureInfo.InvariantCulture) : "");
         Stat(GameArt.Get(GameArt.Swords), Kit.Num(RecapTexts.TeamDamage(view)));
+        if (party)
+        {
+            HBoxContainer coins = k.Row(-8);
+            foreach (BarRow p in ScoreboardTab.Players(view))
+                coins.AddChild(Kit.Center(RecapPanel.Coin(k, p.IconKey, RecapTheme.Accent(p.ColorHex), 38)));
+            row.AddChild(Kit.Center(coins));
+        }
         row.AddChild(Kit.Fill());
         row.AddChild(Kit.Center(k.Text(Loc.Text("WHO_CARRIED.summary.date", date), 16, RecapTheme.Muted)));
         return bar;
@@ -169,7 +178,7 @@ internal static class SummaryCard
         return hand;
     }
 
-    private static string Note(RecapView view)
+    internal static string Note(RecapView view)
     {
         var parts = new List<string>();
         if (view.BonusNote.Length > 0 && ScoreboardTab.Players(view).Count > 1) parts.Add(view.BonusNote);
@@ -357,7 +366,7 @@ internal static class SummaryCard
     }
 
     /// <summary>The seed and who played on the left, the mod's name on the right.</summary>
-    private static Control Footer(Kit k, RecapView view)
+    internal static Control Footer(Kit k, RecapView view)
     {
         HBoxContainer row = k.Row(12);
         var parts = new List<string>();

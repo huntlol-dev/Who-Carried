@@ -151,6 +151,7 @@
   "WHO_CARRIED.summary.won": "Beat {0} on floor {1}, {2} damage over {3}.",
   "WHO_CARRIED.summary.your_run": "Your run",
   "WHO_CARRIED.support.block": "Block",
+  "WHO_CARRIED.support.block_given": "Block given",
   "WHO_CARRIED.support.buffs": "Buff stacks",
   "WHO_CARRIED.support.cards": "Cards",
   "WHO_CARRIED.support.created_count": "Created",

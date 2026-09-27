@@ -113,8 +113,11 @@ internal static class DevPreview
                     Path.Combine(dataDir, $"preview-{TabNames.Length + 2}-export.png"), error =>
                     {
                         if (error != null) Tracker.Note($"preview export failed: {error}");
-                        RecapUi.Hide();
-                        CaptureTopBar(dataDir, () => CapturePad(dataDir, sample, () => Tracker.Note("preview done")));
+                        SaveShare(dataDir, "preview-share.png", later, sample.Icons, () =>
+                        {
+                            RecapUi.Hide();
+                            CaptureTopBar(dataDir, () => CapturePad(dataDir, sample, () => Tracker.Note("preview done")));
+                        });
                     });
             });
         }
@@ -478,6 +481,35 @@ internal static class DevPreview
                     Tracker.Note("preview done");
                 });
             });
+    }
+
+    /// <summary>Renders the Copy to clipboard picture into the data folder and logs its size, then carries on.</summary>
+    private static void SaveShare(string dataDir, string file, RecapView view, Func<string?, Texture2D?> icons, Action then)
+    {
+        try
+        {
+            PngExporter.Render(ShareCard.Create(view, icons), ShareCard.PixelWidth, (image, error) =>
+            {
+                if (image == null)
+                {
+                    Tracker.Note($"preview share: {file} failed: {error}");
+                }
+                else
+                {
+                    string? saveError = PngExporter.SavePng(image, Path.Combine(dataDir, file));
+                    Tracker.Note($"preview share: {file} {image.GetWidth()}×{image.GetHeight()} {saveError ?? "saved"}");
+                    image.Dispose();
+                }
+                then();
+            });
+        }
+        catch (Exception e)
+        {
+            // Never lets a broken picture stop the rest of the preview: log it and carry on.
+            Tracker.LogError("preview share", e);
+            Tracker.Note($"preview share: {file} failed: {e.Message}");
+            then();
+        }
     }
 
     /// <summary>Moves a virtual mouse over the chart so the screenshot shows the hover readout.</summary>

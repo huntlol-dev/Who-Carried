@@ -261,7 +261,8 @@ internal static class ScoreboardTab
     }
 
     /// <summary>Each player's top few damage sources with their art, on one shared scale.</summary>
-    public static Control TopSources(Kit k, RecapView view, int rows, Live? live)
+    /// <param name="gold">Each player's gold earned beside their name, as the copied picture shows it.</param>
+    public static Control TopSources(Kit k, RecapView view, int rows, Live? live, bool gold = false)
     {
         VBoxContainer box = k.Column(11);
         box.AddChild(k.Heading(Loc.Text("WHO_CARRIED.sources.top"), GameArt.Get(GameArt.Swords)));
@@ -290,7 +291,7 @@ internal static class ScoreboardTab
             });
         }
 
-        (Control, Action<(SourcesView Source, int Max)>) Group((SourcesView Source, int Max) item)
+        (Control, Action<(SourcesView Source, int Max, int Gold)>) Group((SourcesView Source, int Max, int Gold) item)
         {
             Color color = RecapTheme.Accent(item.Source.ColorHex);
             var panel = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore, CustomMinimumSize = k.V(340, 0) };
@@ -304,26 +305,48 @@ internal static class ScoreboardTab
             style.ContentMarginBottom = k.U(10);
             panel.AddThemeStyleboxOverride("panel", style);
             VBoxContainer group = k.Column(7);
-            group.AddChild(k.Who(RecapTexts.Name(item.Source.PlayerLabel), item.Source.IconKey, color));
+            HBoxContainer who = k.Who(RecapTexts.Name(item.Source.PlayerLabel), item.Source.IconKey, color);
+            // Built only when gold is on: a never-parented row and label would leak two nodes per player otherwise.
+            HBoxContainer? coin = null;
+            Label? earned = null;
+            if (gold)
+            {
+                // The name gives way to the gold: it trims with "…" before the two can touch.
+                var name = (Label)who.GetChild(who.GetChildCount() - 1);
+                name.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+                name.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
+                name.CustomMinimumSize = k.V(24, 0);
+                // The game's coin is a white text glyph, tinted like the words beside it, as in the Decks tab.
+                coin = k.Row(5);
+                earned = k.Text("", 15, RecapTheme.Gold, true, Ink.Soft);
+                coin.AddChild(Kit.Center(k.Pic(GameArt.Get(GameArt.Gold), 18, 18, RecapTheme.Gold)));
+                coin.AddChild(Kit.Center(earned));
+                who.AddChild(Kit.Center(coin));
+            }
+            group.AddChild(who);
             Label none = k.Text(Loc.Text("WHO_CARRIED.empty.damage"), 14, RecapTheme.Muted);
             group.AddChild(none);
             panel.AddChild(group);
             var lines = new KeyedRows<(BarRow Row, int Max)>(group, l => RecapTexts.SourceKey(l.Row), l => Line(l, color), offset: 2);
-            void Apply((SourcesView Source, int Max) it)
+            void Apply((SourcesView Source, int Max, int Gold) it)
             {
                 List<BarRow> top = it.Source.Rows.Where(r => !RecapTexts.IsOther(r)).Take(rows).ToList();
                 none.Visible = top.Count == 0;
                 lines.Sync(top.Select(r => (r, it.Max)));
+                if (earned != null) earned.Text = Loc.Text("WHO_CARRIED.decks.gold", Kit.Num(it.Gold));
+                if (coin != null) coin.Visible = it.Gold > 0;
             }
             Apply(item);
             return (panel, Apply);
         }
 
-        var groups = new KeyedRows<(SourcesView Source, int Max)>(box, g => g.Source.PlayerLabel, Group, offset: 1);
+        var groups = new KeyedRows<(SourcesView Source, int Max, int Gold)>(box, g => g.Source.PlayerLabel, Group, offset: 1);
         void Sync(RecapView v)
         {
             int max = v.Sources.SelectMany(s => s.Rows).Where(r => !RecapTexts.IsOther(r)).Select(r => r.Value).DefaultIfEmpty(1).Max();
-            groups.Sync(v.Sources.Where(s => s.PlayerLabel != RecapBuilder.UnattributedLabel).Select(s => (s, max)));
+            // Sources and Decks label a player the same way, "name · character".
+            groups.Sync(v.Sources.Where(s => s.PlayerLabel != RecapBuilder.UnattributedLabel)
+                .Select(s => (s, max, v.Decks.FirstOrDefault(d => d.PlayerLabel == s.PlayerLabel)?.Gold ?? 0)));
         }
         Sync(view);
         live?.On(Sync);
