@@ -147,12 +147,19 @@ internal static class SupportTab
         title.AddChild(Kit.Center(total));
         column.AddChild(title);
 
-        // Whoever gave the most won this kind's award, if they gave enough for it.
-        HBoxContainer awardLine = k.Row(6);
-        Label awardName = k.Text("", 14, RecapTheme.Gold, true), awardWinner = k.Text("", 14, RecapTheme.Muted, true);
-        awardLine.AddChild(awardName);
-        awardLine.AddChild(awardWinner);
-        if (!compact && showAwards) column.AddChild(awardLine);
+        // Whoever gave the most won this kind's award, if they gave enough for it. Built only when it's shown: a
+        // never-parented row and its two labels would leak three nodes per card otherwise.
+        HBoxContainer? awardLine = null;
+        Label? awardName = null, awardWinner = null;
+        if (!compact && showAwards)
+        {
+            awardLine = k.Row(6);
+            awardName = k.Text("", 14, RecapTheme.Gold, true);
+            awardWinner = k.Text("", 14, RecapTheme.Muted, true);
+            awardLine.AddChild(awardName);
+            awardLine.AddChild(awardWinner);
+            column.AddChild(awardLine);
+        }
 
         float icon = compact ? 16 : 22, who = compact ? 62 : 104, amount = compact ? 30 : 48;
         var bars = new List<(LiveNumber Amount, LiveBar Bar)>();
@@ -188,10 +195,13 @@ internal static class SupportTab
                 bars[i].Amount.Set(kind.Value(now[i]));
                 bars[i].Bar.Set((double)kind.Value(now[i]) / most);
             }
-            Award? award = v.Awards.FirstOrDefault(a => a.Title == kind.Award);
-            awardLine.Visible = award != null;
-            awardName.Text = award == null ? "" : Loc.Text(award.Title);
-            awardWinner.Text = award == null ? "" : "· " + award.PlayerName;
+            if (awardLine != null && awardName != null && awardWinner != null)
+            {
+                Award? award = v.Awards.FirstOrDefault(a => a.Title == kind.Award);
+                awardLine.Visible = award != null;
+                awardName.Text = award == null ? "" : Loc.Text(award.Title);
+                awardWinner.Text = award == null ? "" : "· " + award.PlayerName;
+            }
         }
         Update(view);
         return (tip, Update);
