@@ -525,7 +525,8 @@ internal static class DevPreview
     /// "copy" in the flag: Copy to clipboard for real, on a sample whose first player has a long name. Saves the picture
     /// (preview-copy-share.png, and a mid-run one as preview-share-midrun.png). Clicks the button and closes the recap
     /// straight away, which must not throw; then opens it again and double-clicks, which must copy once. Screenshots the
-    /// Copied button and the status line (preview-copy.png), and reads the clipboard back. Overwrites the clipboard.
+    /// Copied button and the status line (preview-copy.png), and reads the clipboard back. Then puts a failed copy's
+    /// message in the status line and screenshots the bar again (preview-copy-failed.png). Overwrites the clipboard.
     /// </summary>
     private static void CheckCopy(string dataDir, Sample sample)
     {
@@ -542,11 +543,20 @@ internal static class DevPreview
                     // A copy takes about half a second; "Copied" then shows for two, the status line for four.
                     Later.Run(1.5, () =>
                     {
-                        ((SceneTree)Engine.GetMainLoop()).Root.GetTexture().GetImage().SavePng(Path.Combine(dataDir, "preview-copy.png"));
+                        Window root = ((SceneTree)Engine.GetMainLoop()).Root;
+                        root.GetTexture().GetImage().SavePng(Path.Combine(dataDir, "preview-copy.png"));
                         Tracker.Note($"preview copy: status '{handle.Status.Text}'");
                         ReadBack();
-                        RecapUi.Hide();
-                        Tracker.Note("preview done");
+                        // The failure message, as a failed copy shows it: the longest thing the status line says, and
+                        // the one a working clipboard never shows. Laid out, it must read whole, clear of the bar's
+                        // other words.
+                        handle.Status.Text = Loc.Text("WHO_CARRIED.copy.failed", Loc.Text("WHO_CARRIED.action.save_image"));
+                        Later.Run(0.3, () =>
+                        {
+                            root.GetTexture().GetImage().SavePng(Path.Combine(dataDir, "preview-copy-failed.png"));
+                            RecapUi.Hide();
+                            Tracker.Note("preview done");
+                        });
                     });
                 });
             }));
