@@ -10,6 +10,7 @@
 - Gold earned per player in the Decks tab and the exported image, from the game's own run history, so it's there for co-op guests and reloaded runs too.
 - **Copy to clipboard**, beside Export as image on the recap: one click puts a picture of the run on the clipboard, ready to paste into Discord. It's the scoreboard without the recap's buttons, with each player's gold earned and what they gave their teammates. Tried on Windows; Steam Deck (Desktop Mode) and Mac haven't been tried yet.
 - **Cards given** in Support and the exported image: which cards each player made for their teammates, Souls included, each with a bar against the card they gave most.
+- The Sources tab notes HP a player's relic cut from enemies without hitting them, like **Fur Coat** starting enemies at 1 HP. It's shown on its own line and isn't counted as damage.
 
 ### Changed
 
