@@ -62,27 +62,31 @@ internal static class RecapTexts
 
     public static int TeamDamage(RecapView view) => view.Overview.Where(r => r.Share != null).Sum(r => r.Value);
 
-    /// <summary>The picture for each of the recap's own awards, from the game's icons.</summary>
-    public static Texture2D? AwardArt(Kit k, Award award) => AwardArt(k, award.Title, award.IconKey);
+    /// <summary>
+    /// The picture for each of the recap's own awards, from the game's icons. Each award has its own, and none is a
+    /// heading's or a Support card's, so a picture never stands for two things on the same page. Enabler, Protector and
+    /// Clutch share theirs with the debuffs and the HP they're for.
+    /// </summary>
+    public static Texture2D? AwardArt(Kit k, Award award) => AwardArt(k, award.Title);
 
-    /// <param name="winnerIconKey">The winner's character: Battery wears their energy gem (the colourless one is a grey orb).</param>
-    public static Texture2D? AwardArt(Kit k, string title, string? winnerIconKey) => title switch
+    public static Texture2D? AwardArt(Kit k, string title) => title switch
     {
-        AwardBuilder.HeavyHitter => GameArt.Get(GameArt.Swords),
+        AwardBuilder.HeavyHitter => GameArt.Get(GameArt.Explosion),
         AwardBuilder.Enabler => k.Icon(DebuffBuilder.IconPrefix + "VULNERABLE_POWER"),
         AwardBuilder.Clutch => GameArt.Get(GameArt.Heart),
         AwardBuilder.Protector => k.Icon(DebuffBuilder.IconPrefix + "WEAK_POWER"),
-        AwardBuilder.Wall or AwardBuilder.SiegeBreaker => GameArt.Get(GameArt.Block),
-        AwardBuilder.FightLeader => GameArt.Get(GameArt.Trophy),
-        AwardBuilder.JackOfAllTrades => GameArt.Get(GameArt.Cards),
-        AwardBuilder.CardFactory => GameArt.Get(GameArt.Deck),
-        AwardBuilder.Unscathed => GameArt.Get(GameArt.Perfect),
-        AwardBuilder.PunchingBag => GameArt.Get(GameArt.Skull),
-        AwardBuilder.Battery => k.Icon(EnergyKey(winnerIconKey)) ?? GameArt.Get(GameArt.Energy),
-        AwardBuilder.CarePackage => GameArt.Get(GameArt.Cards),
-        AwardBuilder.Bodyguard => GameArt.Get(GameArt.Block),
-        AwardBuilder.Coach => k.Icon(DebuffBuilder.IconPrefix + "STRENGTH_POWER"),
-        AwardBuilder.Playmaker => GameArt.Get(GameArt.DrawPile) ?? GameArt.Get(GameArt.Deck),
+        AwardBuilder.Wall => GameArt.Get(GameArt.Rampart),
+        AwardBuilder.SiegeBreaker => GameArt.Get(GameArt.BrokenBlock),
+        AwardBuilder.FightLeader => GameArt.Get(GameArt.Leader),
+        AwardBuilder.JackOfAllTrades => GameArt.Get(GameArt.Wrench),
+        AwardBuilder.CardFactory => GameArt.Get(GameArt.Factory),
+        AwardBuilder.Unscathed => GameArt.Get(GameArt.Blur),
+        AwardBuilder.PunchingBag => GameArt.Get(GameArt.Dummy),
+        AwardBuilder.Battery => GameArt.Get(GameArt.Lightning),
+        AwardBuilder.CarePackage => GameArt.Get(GameArt.Chest),
+        AwardBuilder.Bodyguard => GameArt.Get(GameArt.Guarded),
+        AwardBuilder.Coach => GameArt.Get(GameArt.Clipboard),
+        AwardBuilder.Playmaker => GameArt.Get(GameArt.Pawn),
         _ => GameArt.Get(GameArt.Trophy),
     };
 

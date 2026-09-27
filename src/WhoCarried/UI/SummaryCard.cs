@@ -55,17 +55,17 @@ internal static class SummaryCard
         if (view.FightPoints.Count > 0)
             body.AddChild(Climb.Create(k, view, Inner, 212, 110, interactive: false, live: null));
         if (view.Debuffs.Applied.Count > 0)
-            body.AddChild(Section(k, Loc.Text("WHO_CARRIED.tab.debuffs"), k.Icon(DebuffBuilder.IconPrefix + "VULNERABLE_POWER"),
+            body.AddChild(Section(k, Loc.Text("WHO_CARRIED.tab.debuffs"), GameArt.Get(GameArt.DebuffIntent),
                 DebuffsTab.Applied(k, view, Inner, 3, null), Loc.Text("WHO_CARRIED.debuffs.hint")));
         // Headed "Given to teammates", like the tab: one row of small cards, as many across as there are kinds given.
         if (view.HasSupport)
-            body.AddChild(Section(k, Loc.Text("WHO_CARRIED.support.heading"), SupportTab.HeadingArt(k, view),
+            body.AddChild(Section(k, Loc.Text("WHO_CARRIED.support.heading"), SupportTab.HeadingArt(),
                 SupportTab.Cards(k, view, Inner, SupportTab.KindsGiven(view), null, compact: true), Loc.Text("WHO_CARRIED.support.hint")));
         if (view.HasCardGifts)
-            body.AddChild(Section(k, Loc.Text("WHO_CARRIED.support.cards_given_heading"), GameArt.Get(GameArt.Cards),
+            body.AddChild(Section(k, Loc.Text("WHO_CARRIED.support.cards_given_heading"), GameArt.Get(GameArt.CardReward),
                 CardGiftPanels.Create(k, view, Inner, null, compact: true), Loc.Text("WHO_CARRIED.support.cards_given_hint")));
         if (view.Defense.Count > 0)
-            body.AddChild(Section(k, Loc.Text("WHO_CARRIED.tab.defense"), GameArt.Get(GameArt.Block), DefenseTab.Plates(k, view, Inner, 2, 104, null, compact: true)));
+            body.AddChild(Section(k, Loc.Text("WHO_CARRIED.tab.defense"), GameArt.Get(GameArt.Shell), DefenseTab.Plates(k, view, Inner, 2, 104, null, compact: true)));
         if (view.Decks.Any(d => d.Entries.Count > 0))
             body.AddChild(Section(k, Loc.Text("WHO_CARRIED.tab.decks"), GameArt.Get(GameArt.Deck), Decks(k, view), Loc.Text("WHO_CARRIED.decks.hint")));
 

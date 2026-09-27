@@ -23,11 +23,12 @@ internal static class DebuffsTab
         VBoxContainer content = k.Column(14);
         content.CustomMinimumSize = k.V(1522, 0);
         scroll.AddChild(content);
-        content.AddChild(k.Heading(Loc.Text("WHO_CARRIED.debuffs.applied"), k.Icon(DebuffBuilder.IconPrefix + "VULNERABLE_POWER"),
+        // The headings' pictures aren't debuffs', which the cards below wear.
+        content.AddChild(k.Heading(Loc.Text("WHO_CARRIED.debuffs.applied"), GameArt.Get(GameArt.DebuffIntent),
             Loc.Text("WHO_CARRIED.debuffs.hint")));
         content.AddChild(Applied(k, view, 1522, 3, live));
         // What enemy debuffs cost you: left out while nobody has paid anything (and for runs logged before it was tracked).
-        Control gap = k.Gap(0, 8), heading = k.Heading(Loc.Text("WHO_CARRIED.debuffs.cost"), k.Icon(DebuffBuilder.IconPrefix + "FRAIL_POWER")),
+        Control gap = k.Gap(0, 8), heading = k.Heading(Loc.Text("WHO_CARRIED.debuffs.cost"), GameArt.Get(GameArt.Tainted)),
             costs = Costs(k, view, 1522, live);
         foreach (Control part in new[] { gap, heading, costs }) content.AddChild(part);
         void Show(RecapView v)

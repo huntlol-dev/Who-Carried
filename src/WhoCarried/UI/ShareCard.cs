@@ -89,7 +89,7 @@ internal static class ShareCard
     private static Control Support(Kit k, RecapView view)
     {
         VBoxContainer section = k.Column(14);
-        section.AddChild(k.Heading(Loc.Text("WHO_CARRIED.support.heading"), SupportTab.HeadingArt(k, view), null, 26));
+        section.AddChild(k.Heading(Loc.Text("WHO_CARRIED.support.heading"), SupportTab.HeadingArt(), null, 26));
         section.AddChild(SupportTab.Cards(k, view, ShareLayout.Width - 2 * ShareLayout.Side,
             ShareLayout.SupportColumns(SupportTab.KindsGiven(view)), live: null, showAwards: false, givenTitles: true));
         return section;

@@ -4,21 +4,26 @@ namespace WhoCarried.UI;
 
 /// <summary>
 /// The game's own UI art the recap is dressed in: the ancient card frame and banner, energy gems, the top bar, map
-/// room icons, stats-screen icons. Loaded on first use and cached; a missing texture comes back as null and the
-/// recap draws without it.
+/// room icons, stats-screen icons, and power, intent and reward icons that give each award and heading a picture of
+/// its own. Loaded on first use and cached; a missing texture comes back as null and the recap draws without it.
 /// </summary>
 internal static class GameArt
 {
     private const string Ui = "res://images/atlases/ui_atlas.sprites/";
     private const string Map = "res://images/atlases/compressed.sprites/map/";
     private const string Stats = "res://images/packed/statistics_screen/";
+    private const string Powers = "res://images/powers/";
 
     public const string Frame = "frame", Banner = "banner", Energy = "energy", TopBar = "top_bar", Floor = "floor",
         Timer = "timer", Ascension = "ascension", Heart = "heart", Deck = "deck", Swords = "swords", Trophy = "trophy",
         Cards = "cards", Achievements = "achievements",
         Block = "block", Skull = "skull", Brush = "brush",
-        Dot = "dot", Monster = "monster", Elite = "elite", Boss = "boss", Unknown = "unknown", Perfect = "perfect",
-        DrawPile = "draw_pile", Gold = "gold";
+        Dot = "dot", Monster = "monster", Elite = "elite", Boss = "boss", Unknown = "unknown",
+        DrawPile = "draw_pile", Gold = "gold", CardReward = "card_reward", Chest = "chest", DebuffIntent = "debuff_intent",
+        MapMarker = "map_marker", HighFive = "high_five", Explosion = "explosion", Rampart = "rampart",
+        BrokenBlock = "broken_block", Guarded = "guarded", Leader = "leader", Wrench = "wrench", Factory = "factory",
+        Dummy = "dummy", Blur = "blur", Lightning = "lightning", Clipboard = "clipboard", Pawn = "pawn", Shell = "shell",
+        Peak = "peak", Tainted = "tainted";
 
     private static readonly Dictionary<string, string> Paths = new()
     {
@@ -43,9 +48,28 @@ internal static class GameArt
         [Elite] = Ui + "map/icons/map_elite.tres",
         [Boss] = Ui + "map/icons/map_burly_monster.tres",
         [Unknown] = Ui + "map/icons/map_unknown.tres",
-        [Perfect] = "res://images/ui/game_over_screen/badge_perfect.png",
         [DrawPile] = "res://images/packed/combat_ui/draw_pile.png",
         [Gold] = "res://images/packed/sprite_fonts/gold_icon.png",
+        [CardReward] = "res://images/ui/reward_screen/reward_icon_card.png",
+        [Chest] = "res://images/ui/reward_screen/reward_icon_shared_relic.png",
+        [DebuffIntent] = "res://images/packed/intents/intent_debuff.png",
+        [MapMarker] = "res://images/packed/map/icons/map_spoils_map_marker.png",
+        [HighFive] = Powers + "tag_team_power.png",
+        [Explosion] = Powers + "vigor_power.png",
+        [Rampart] = Powers + "rampart_power.png",
+        [BrokenBlock] = Powers + "no_block_power.png",
+        [Guarded] = Powers + "guarded_power.png",
+        [Leader] = Powers + "leadership_power.png",
+        [Wrench] = Powers + "tools_of_the_trade_power.png",
+        [Factory] = Powers + "smokestack_power.png",
+        [Dummy] = Powers + "battleworn_dummy_time_limit_power.png",
+        [Blur] = Powers + "blur_power.png",
+        [Lightning] = Powers + "energy_next_turn_power.png",
+        [Clipboard] = Powers + "coordinate_power.png",
+        [Pawn] = Powers + "stratagem_power.png",
+        [Shell] = Powers + "hardened_shell_power.png",
+        [Peak] = Powers + "conqueror_power.png",
+        [Tainted] = Powers + "tainted_power.png",
     };
 
     private static readonly Dictionary<string, Texture2D?> Cache = new();

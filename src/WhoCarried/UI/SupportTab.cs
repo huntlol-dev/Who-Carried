@@ -28,11 +28,11 @@ internal static class SupportTab
         content.CustomMinimumSize = k.V(1522, 0);
         inset.AddChild(content);
         VBoxContainer shown = k.Column(14);
-        shown.AddChild(k.Heading(Loc.Text("WHO_CARRIED.support.heading"), HeadingArt(k, view), Loc.Text("WHO_CARRIED.support.hint")));
+        shown.AddChild(k.Heading(Loc.Text("WHO_CARRIED.support.heading"), HeadingArt(), Loc.Text("WHO_CARRIED.support.hint")));
         shown.AddChild(Cards(k, view, 1522, 3, live));
         content.AddChild(shown);
         VBoxContainer cardsGiven = k.Column(14);
-        cardsGiven.AddChild(k.Heading(Loc.Text("WHO_CARRIED.support.cards_given_heading"), GameArt.Get(GameArt.Cards),
+        cardsGiven.AddChild(k.Heading(Loc.Text("WHO_CARRIED.support.cards_given_heading"), GameArt.Get(GameArt.CardReward),
             Loc.Text("WHO_CARRIED.support.cards_given_hint")));
         cardsGiven.AddChild(CardGiftPanels.Create(k, view, 1522, live));
         content.AddChild(cardsGiven);
@@ -55,24 +55,28 @@ internal static class SupportTab
     }
 
     /// <summary>
-    /// One kind of help: its name, colour, value, and the award its leader can win; and the name it goes by on the
-    /// copied picture, when that differs.
+    /// One kind of help: its name, colour, value and picture (given the top giver), and the award its leader can win;
+    /// and the name it goes by on the copied picture, when that differs. The award has a picture of its own.
     /// </summary>
-    private sealed record Kind(string Words, Color Tone, Func<SupportRow, int> Value, string Award, string? GivenWords = null);
+    private sealed record Kind(string Words, Color Tone, Func<SupportRow, int> Value, Func<Kit, SupportRow, Texture2D?> Art,
+                               string Award, string? GivenWords = null);
 
     private static readonly Kind[] Kinds =
     {
-        new("WHO_CARRIED.support.energy", RecapTheme.Gold, r => r.Energy, AwardBuilder.Battery),
-        new("WHO_CARRIED.support.cards", RecapTheme.Text, r => r.Cards, AwardBuilder.CarePackage),
+        // Energy wears the gem of whoever gave the most; the colourless one is a grey orb.
+        new("WHO_CARRIED.support.energy", RecapTheme.Gold, r => r.Energy,
+            (k, top) => k.Icon(RecapTexts.EnergyKey(top.IconKey)) ?? GameArt.Get(GameArt.Energy), AwardBuilder.Battery),
+        new("WHO_CARRIED.support.cards", RecapTheme.Text, r => r.Cards, (_, _) => GameArt.Get(GameArt.Cards), AwardBuilder.CarePackage),
         // On the copied picture the scoreboard cards' own Block chip (enemy block knocked off) sits just above.
-        new("WHO_CARRIED.support.block", RecapTheme.Blocked, r => r.Block, AwardBuilder.Bodyguard, "WHO_CARRIED.support.block_given"),
-        new("WHO_CARRIED.support.buffs", RecapTheme.Taken, r => r.Buffs, AwardBuilder.Coach),
-        new("WHO_CARRIED.support.draws", RecapTheme.Teal, r => r.Draws, AwardBuilder.Playmaker),
+        new("WHO_CARRIED.support.block", RecapTheme.Blocked, r => r.Block, (_, _) => GameArt.Get(GameArt.Block), AwardBuilder.Bodyguard,
+            "WHO_CARRIED.support.block_given"),
+        new("WHO_CARRIED.support.buffs", RecapTheme.Taken, r => r.Buffs, (k, _) => k.Icon(DebuffBuilder.IconPrefix + "STRENGTH_POWER"),
+            AwardBuilder.Coach),
+        new("WHO_CARRIED.support.draws", RecapTheme.Teal, r => r.Draws, (_, _) => GameArt.Get(GameArt.DrawPile), AwardBuilder.Playmaker),
     };
 
-    /// <summary>The top-ranked player's energy gem, heading the support; the colourless one is a grey orb.</summary>
-    public static Texture2D? HeadingArt(Kit k, RecapView view) =>
-        k.Icon(RecapTexts.EnergyKey(view.Support.FirstOrDefault()?.IconKey)) ?? GameArt.Get(GameArt.Energy);
+    /// <summary>A high five, heading what players gave their teammates: the kinds of help below each have their own picture.</summary>
+    public static Texture2D? HeadingArt() => GameArt.Get(GameArt.HighFive);
 
     /// <summary>How many kinds of help anyone gave: the number of cards <see cref="Cards"/> shows.</summary>
     public static int KindsGiven(RecapView view) => Kinds.Count(kind => Givers(view, kind).Count > 0);
@@ -139,8 +143,7 @@ internal static class SupportTab
 
         HBoxContainer title = k.Row(compact ? 6 : 10);
         float art = compact ? 20 : 34;
-        // The same picture as the kind's award; energy wears the gem of whoever gave the most.
-        title.AddChild(Kit.Center(k.Pic(RecapTexts.AwardArt(k, kind.Award, givers[0].IconKey), art, art)));
+        title.AddChild(Kit.Center(k.Pic(kind.Art(k, givers[0]), art, art)));
         Label name = k.Text(Loc.Text(givenTitles && kind.GivenWords != null ? kind.GivenWords : kind.Words), compact ? 14 : 22,
             kind.Tone, true, Ink.Soft);
         name.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;

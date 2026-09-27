@@ -24,11 +24,12 @@ internal static class Climb
                                  PadTab? pad = null)
     {
         Control box = k.Box(width, height);
-        HBoxContainer heading = k.Heading(Loc.Text("WHO_CARRIED.timeline.climb"), GameArt.Get(GameArt.Monster));
+        // A map route heads the climb and a flag on a peak marks its biggest fight: the fights below wear their rooms' icons.
+        HBoxContainer heading = k.Heading(Loc.Text("WHO_CARRIED.timeline.climb"), GameArt.Get(GameArt.MapMarker));
         Label summary = k.Text("", 15, RecapTheme.Muted);
         heading.AddChild(Kit.Center(summary));
         HBoxContainer tag = k.Row(5);
-        tag.AddChild(Kit.Center(k.Pic(GameArt.Get(GameArt.Trophy), 18, 18)));
+        tag.AddChild(Kit.Center(k.Pic(GameArt.Get(GameArt.Peak), 18, 18)));
         Label tagText = k.Text("", 15, RecapTheme.Gold, true, Ink.Soft);
         tag.AddChild(Kit.Center(tagText));
         heading.AddChild(Kit.Center(tag));
