@@ -17,7 +17,7 @@ When a run ends, the recap opens over the victory or defeat screen and deals eve
 - **Defense:** damage taken, blocked and healed, and how close anyone came to dying.
 - **Decks:** everyone's final deck, with the damage each card dealt, and the gold each player earned over the run.
 
-**Export as image** renders the whole run as one tall summary card and puts it in the player's Steam screenshots.
+**Copy to clipboard** puts a picture of the scoreboard on the clipboard, ready to paste into Discord: everyone's card, their top sources and gold earned, and what they gave their teammates. **Export as image** renders the whole run as one tall summary card and puts it in the player's Steam screenshots.
 
 ## Good to know
 
@@ -64,7 +64,7 @@ To build against another game version's DLLs, pass `-p:GameData=<folder with sts
 
 Two files in the mod's data folder switch on developer tools at start-up:
 
-- `preview.flag` opens the recap with sample data about 10 s after the game loads, screenshots every view into the data folder, then closes it. The file can hold a party size (`1`–`4`), or a comma-separated list of up to five character ids, like `IRONCLAD,IRONCLAD,REGENT`, to check players who share a character. Use `timer eng` or `timer zhs` to check that changing elapsed time leaves the recap's neighboring statistics in place; results are logged, with `preview-timer-normal.png` saved after ordinary ticks pass and `preview-timer.png` after the long-run and visibility checks pass.
+- `preview.flag` opens the recap with sample data about 10 s after the game loads, screenshots every view into the data folder, with the exported image and the Copy to clipboard picture (`preview-share.png`), then closes it. The file can hold a party size (`1`–`4`), or a comma-separated list of up to five character ids, like `IRONCLAD,IRONCLAD,REGENT`, to check players who share a character. Use `timer eng` or `timer zhs` to check that changing elapsed time leaves the recap's neighboring statistics in place; results are logged, with `preview-timer-normal.png` saved after ordinary ticks pass and `preview-timer.png` after the long-run and visibility checks pass. Use `copy` (or `copy zhs`) to check Copy to clipboard for real, on a sample whose first player has a long name. It saves the picture (`preview-copy-share.png`, and a mid-run one as `preview-share-midrun.png`), clicks the button with the recap closing straight after, then double-clicks it. It logs the clipboard's formats and the size read back from it, and saves `preview-copy.png` showing the button and status line. It overwrites your clipboard.
 - `replay.flag` rebuilds the recap of the last recorded run from `events.log` with the current rules.
 
 ## What's changed
