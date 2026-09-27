@@ -27,6 +27,15 @@ public static class EffectCreditTests
     private static IReadOnlyDictionary<ulong, int> NoOne(int _) => new Dictionary<ulong, int>();
 
     [Test]
+    public static void AKillOfACreatureWithInfiniteHpIsNotCounted()
+    {
+        // A judgement killing an enemy mid-undying-phase would otherwise credit 999,999,999 HP.
+        Check.Equal("not counted", Show(EffectCredit.ForKill(Enemy(hp: 999_999_999, owner: You) with { HpInfinite = true },
+            StackedBy((You, 6)))), "infinite HP");
+        Check.Equal("1:25", Show(EffectCredit.ForKill(Enemy(owner: You), null)), "a normal kill still counts");
+    }
+
+    [Test]
     public static void AKillNoEffectStartedIsNotCounted()
     {
         // A card's kill, an enemy's own move, or minions dying inside their leader's kill.

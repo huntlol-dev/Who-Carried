@@ -13,11 +13,13 @@ public static class EffectCredit
     /// <param name="EffectActing">Some effect's turn hook started the kill (not a card, a move, or another kill).</param>
     /// <param name="CountedAsDoom">Doom's own kill has already counted it.</param>
     /// <param name="EffectOwner">The acting effect's player, if it has one.</param>
-    public sealed record Kill(bool EffectActing, bool IsEnemy, bool IsAlive, int Hp, bool CountedAsDoom, ulong? EffectOwner);
+    /// <param name="HpInfinite">The creature health bar shows infinite: its HP is not real.</param>
+    public sealed record Kill(bool EffectActing, bool IsEnemy, bool IsAlive, int Hp, bool CountedAsDoom, ulong? EffectOwner,
+                              bool HpInfinite = false);
 
     /// <summary>
     /// Who a kill's HP goes to. Null when it isn't counted: no effect acting, a player or pet, a creature already dead or
-    /// at 0, or Doom's own kill. Otherwise the enemy's own copy of the effect shares it out by who stacked it; with no
+    /// at 0, one showing infinite HP, or Doom's own kill. Otherwise the enemy's own copy of the effect shares it out by who stacked it; with no
     /// copy, the effect's player gets it all. Empty when no player is behind it: an own copy no player stacked (an
     /// enemy's Fading ending it) credits nobody, not the effect's player.
     /// </summary>
@@ -25,7 +27,7 @@ public static class EffectCredit
     /// Only called for a kill that counts.</param>
     public static IReadOnlyDictionary<ulong, int>? ForKill(Kill kill, Func<int, IReadOnlyDictionary<ulong, int>>? ownCopy)
     {
-        if (!kill.EffectActing || !kill.IsEnemy || !kill.IsAlive || kill.Hp <= 0 || kill.CountedAsDoom) return null;
+        if (!kill.EffectActing || !kill.IsEnemy || !kill.IsAlive || kill.Hp <= 0 || kill.CountedAsDoom || kill.HpInfinite) return null;
         if (ownCopy != null) return ownCopy(kill.Hp);
         return kill.EffectOwner is ulong owner ? new Dictionary<ulong, int> { [owner] = kill.Hp } : Nobody;
     }

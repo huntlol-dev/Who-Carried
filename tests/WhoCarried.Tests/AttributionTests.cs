@@ -13,9 +13,19 @@ public static class AttributionTests
 
     private static DamageFacts Facts(ulong? dealer = null, SourceCandidate? pet = null, SourceCandidate? card = null,
                                      SourceCandidate? stack = null, SourceCandidate? fallback = null,
-                                     SourceCandidate? effect = null) =>
+                                     SourceCandidate? effect = null, bool infinite = false) =>
         new(HpRemoved: 7, Blocked: 0, TargetIsEnemy: true, TargetPlayerId: null, DealerPlayerId: dealer,
-            Pet: pet, Card: card, StackTop: stack, Fallback: fallback, Effect: effect);
+            Pet: pet, Card: card, StackTop: stack, Fallback: fallback, Effect: effect, TargetHpInfinite: infinite);
+
+    [Test]
+    public static void AHitOnAnEnemyWithInfiniteHpDoesNotCount()
+    {
+        // The Waterfall Giant's wind-up after it's "killed": 999,999,999 HP and a purple bar.
+        Check.True(!Attribution.Counts(Facts(dealer: 1, card: new(Strike, 1), infinite: true)), "infinite enemy");
+        Check.True(Attribution.Counts(Facts(dealer: 1, card: new(Strike, 1))), "a normal enemy counts");
+        Check.True(Attribution.Counts(Facts(dealer: 1, infinite: true) with { TargetIsEnemy = false, TargetPlayerId = 2 }),
+            "only enemies are affected");
+    }
 
     [Test]
     public static void AnOrbFiringOnItsOwnIsCreditedToTheOrb()

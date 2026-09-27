@@ -29,6 +29,26 @@ public static class ReplayTests
     };
 
     [Test]
+    public static void AHitThatWasNotCountedStaysOutOfAReplay()
+    {
+        var strike = new SourceRef(SourceKind.Card, "STRIKE_IRONCLAD", "Strike");
+        string line = LogReplay.NotCountedLine("Moth", strike, 24, 3, "WATERFALL_GIANT");
+        Check.Equal("Moth not counted 24 hp from Card:STRIKE_IRONCLAD (Strike) | target WATERFALL_GIANT, blocked 3, infinite HP",
+            line, "line");
+        string[] log =
+        {
+            "player 11 = Moth (The Tailor) #5c350f",
+            "[F33 A2] fight start: Waterfall Giant [boss]",
+            "[F33 A2] Moth <- Card:STRIKE_IRONCLAD (Strike) 9 hp | target WATERFALL_GIANT, blocked 0, dealer player Moth, stack [STRIKE_IRONCLAD]",
+            "[F33 A2] " + line,
+            "[F33 A2] fight end, saved",
+        };
+        PlayerTotals moth = LogReplay.Parse(log).Stats.Get(11)!;
+        Check.Equal(9, moth.DamageDealt, "only the counted hit");
+        Check.Equal(0, moth.BlockRemoved, "its block isn't counted either");
+    }
+
+    [Test]
     public static void ReplayRebuildsStatsWithTodaysRules()
     {
         LogReplay.Result r = LogReplay.Parse(Log, id => id == "UNLEASH" ? "Unleash" : null);

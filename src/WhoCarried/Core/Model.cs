@@ -17,6 +17,7 @@ public sealed record SourceCandidate(SourceRef Source, ulong? OwnerId);
 /// <param name="Effect">
 /// For a hit with no dealer: the game content that was running when its damage started (see <see cref="EffectScopes"/>).
 /// </param>
+/// <param name="TargetHpInfinite">The target health bar shows infinite: an enemy in a phase where it cannot die.</param>
 public sealed record DamageFacts(
     int HpRemoved,
     int Blocked,
@@ -27,7 +28,8 @@ public sealed record DamageFacts(
     SourceCandidate? Card,
     SourceCandidate? StackTop,
     SourceCandidate? Fallback,
-    SourceCandidate? Effect = null);
+    SourceCandidate? Effect = null,
+    bool TargetHpInfinite = false);
 
 /// <summary>A player as shown in the recap. CharacterId (e.g. "IRONCLAD") is used to look up the character icon.</summary>
 public sealed record PlayerInfo(ulong NetId, string Name, string Character, string ColorHex, string CharacterId = "");

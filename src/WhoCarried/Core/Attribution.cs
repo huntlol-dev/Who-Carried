@@ -29,6 +29,8 @@ public static class Attribution
         return new AttributionResult(facts.DealerPlayerId ?? chosen?.OwnerId, chosen?.Source ?? SourceRef.Unknown);
     }
 
+    /// <summary>A hit on an enemy whose health bar shows infinite counts for nothing on the attacking side.</summary>
+    public static bool Counts(DamageFacts facts) => !(facts.TargetIsEnemy && facts.TargetHpInfinite);
     /// <summary>
     /// Whether a hit on a Poison-style pile's holder can be that pile's tick: nothing explains it (no dealer, no card,
     /// nothing on the stack), and no other effect was seen running when its damage started.

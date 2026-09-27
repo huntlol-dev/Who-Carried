@@ -52,6 +52,9 @@ public static class LogReplay
     public static string ResumedLine(string runKey, int fightsRestored) =>
         $"--- resumed run {runKey}: {fightsRestored} fights restored ---";
 
+    /// <summary>A skipped infinite-HP hit, logged without the damage marker so replay ignores it.</summary>
+    public static string NotCountedLine(string who, SourceRef source, int hp, int blocked, string target) =>
+        $"{who} not counted {hp} hp from {source.Kind}:{source.Id} ({source.Label}) | target {target}, blocked {blocked}, infinite HP";
     /// <summary>A player's pet losing HP to an enemy (after its "[F.. A..] " prefix), which <see cref="Parse"/> reads back.</summary>
     public static string PetTookLine(string owner, string petId, int hp, string dealer) =>
         $"{owner} pet {petId} took {hp} hp | dealer {dealer}";
