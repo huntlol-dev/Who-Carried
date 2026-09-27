@@ -9,34 +9,38 @@ public static class CardCreationTests
     private static readonly PlayerInfo Bob = new(2, "Bob", "Silent", "7fff00", "SILENT");
 
     [Test]
-    public static void CreationIsVisibleInSoloWithoutClaimingTeammateSupport()
+    public static void OnlyCardsMadeForTeammatesAreListed()
     {
         var s = new RunStats();
         s.RecordCardGeneration(1, 1, Soul, 5);
         var v = RecapBuilder.Build(s, new[] { Alice }, new Dictionary<ulong, DefenseTotals>(), "h");
-        Check.True(v.HasCardCreation && v.HasSupportContent && !v.HasSupport, "solo creation only");
-        Check.Equal((5, 0), (v.Creation[0].Cards[0].Created, v.Creation[0].Cards[0].Given), "self");
+        Check.True(!v.HasCardGifts && !v.HasSupport, "solo: nothing given");
+        Check.Equal(0, v.CardGifts[0].Cards.Count, "cards made for yourself aren't listed");
         s.RecordCardGeneration(1, 2, Soul, 2);
         v = RecapBuilder.Build(s, new[] { Alice, Bob }, new Dictionary<ulong, DefenseTotals>(), "h");
-        Check.True(v.HasCardCreation && v.HasSupport, "both sections");
-        Check.Equal((7, 2), (v.Creation[0].Cards[0].Created, v.Creation[0].Cards[0].Given), "subset");
-        Check.Equal(0, v.Creation[1].Cards.Count, "recipient has no generation");
+        Check.True(v.HasCardGifts && v.HasSupport, "a gift is support");
+        Check.Equal("Card:SOUL:2", string.Join(",", v.CardGifts[0].Cards.Select(c => $"{c.Key}:{c.Given}")), "only the two given");
+        Check.Equal(0, v.CardGifts[1].Cards.Count, "the recipient gave none");
         var empty = RecapBuilder.Build(new RunStats(), new[] { Alice, Bob }, new Dictionary<ulong, DefenseTotals>(), "h");
-        Check.True(!empty.HasSupportContent, "empty");
+        Check.True(!empty.HasCardGifts && !empty.HasSupport, "empty");
     }
 
     [Test]
-    public static void ProjectionKeepsStableKeysAndOldCreationWithoutGiftHistory()
+    public static void GiftsKeepStableKeysAndOldSavesInventNone()
     {
         var s = new RunStats();
-        s.RecordCardCreated(1, new SourceRef(SourceKind.Card, "B", "Twin"), 3);
-        s.RecordCardCreated(1, new SourceRef(SourceKind.Card, "A", "Twin"), 3);
+        s.RecordCardGeneration(1, 2, new SourceRef(SourceKind.Card, "B", "Twin"), 3);
+        s.RecordCardGeneration(1, 2, new SourceRef(SourceKind.Card, "A", "Twin"), 3);
+        s.RecordCardGeneration(1, 2, Soul, 4);
+        // Saved before gifts were recorded card by card: a Cards total, but no cards to list.
+        s.RecordCardCreated(2, Soul, 9);
+        s.RecordSupport(2, 1, SupportKind.Cards, 7);
         s.RecordDamage(2, Soul, 10);
         var v = RecapBuilder.Build(s, new[] { Alice, Bob }, new Dictionary<ulong, DefenseTotals>(), "h");
-        Check.Equal((ulong)2, v.Creation[0].PlayerId, "scoreboard order");
-        Check.Equal("Card:A,Card:B", string.Join(",", v.Creation[1].Cards.Select(c => c.Key)), "tie uses keys");
-        Check.True(v.Creation[1].Cards.All(c => c.Created == 3 && c.Given == 0), "legacy totals");
-        Check.Equal(10, v.Overview.Sum(p => p.Value), "damage untouched");
+        Check.Equal((ulong)2, v.CardGifts[0].PlayerId, "scoreboard order");
+        Check.Equal("Card:SOUL,Card:A,Card:B", string.Join(",", v.CardGifts[1].Cards.Select(c => c.Key)), "most first, then keys");
+        Check.Equal(0, v.CardGifts[0].Cards.Count, "no invented gifts");
+        Check.Equal(7, v.Support[0].Cards, "the old total stays");
     }
 
     [Test]

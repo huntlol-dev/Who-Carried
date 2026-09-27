@@ -5,7 +5,7 @@ using WhoCarried.Localization;
 namespace WhoCarried.UI;
 
 /// <summary>
-/// Generated cards (including self-creation), followed by the separate teammate-gift categories.
+/// What each player gave their teammates, kind by kind, then the cards they made for them.
 /// </summary>
 internal static class SupportTab
 {
@@ -27,24 +27,27 @@ internal static class SupportTab
         VBoxContainer content = k.Column(24);
         content.CustomMinimumSize = k.V(1522, 0);
         inset.AddChild(content);
-        VBoxContainer creation = k.Column(14);
-        creation.AddChild(k.Heading(Loc.Text("WHO_CARRIED.support.created_heading"), GameArt.Get(GameArt.Cards)));
-        creation.AddChild(CreationPanels.Create(k, view, 1522, live));
-        content.AddChild(creation);
         VBoxContainer shown = k.Column(14);
         shown.AddChild(k.Heading(Loc.Text("WHO_CARRIED.support.heading"), HeadingArt(k, view), Loc.Text("WHO_CARRIED.support.hint")));
         shown.AddChild(Cards(k, view, 1522, 3, live));
         content.AddChild(shown);
+        VBoxContainer cardsGiven = k.Column(14);
+        cardsGiven.AddChild(k.Heading(Loc.Text("WHO_CARRIED.support.cards_given_heading"), GameArt.Get(GameArt.Cards),
+            Loc.Text("WHO_CARRIED.support.cards_given_hint")));
+        cardsGiven.AddChild(CardGiftPanels.Create(k, view, 1522, live));
+        content.AddChild(cardsGiven);
 
-        Label empty = k.Text(Loc.Text("WHO_CARRIED.empty.support"), 18, RecapTheme.Muted);
+        Label empty = k.Text("", 18, RecapTheme.Muted);
         empty.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         content.AddChild(empty);
 
         void Apply(RecapView v)
         {
             shown.Visible = v.HasSupport;
-            creation.Visible = v.HasCardCreation;
-            empty.Visible = !v.HasSupportContent;
+            cardsGiven.Visible = v.HasCardGifts;
+            // A solo player has no one to give to, so say what Support is rather than "nothing yet".
+            empty.Visible = !v.HasSupport;
+            empty.Text = v.Support.Count > 1 ? Loc.Text("WHO_CARRIED.empty.support") : Loc.Text("WHO_CARRIED.support.solo");
         }
         Apply(view);
         live.On(Apply);

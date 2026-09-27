@@ -45,19 +45,6 @@ public static class DamageDealtTests
     }
 
     [Test]
-    public static void CreatedCardsFlowIntoSupportCreation()
-    {
-        var s = new RunStats();
-        s.RecordCardCreated(2, new SourceRef(SourceKind.Card, "SHIV", "Shiv"), 3);
-        s.RecordCardCreated(2, new SourceRef(SourceKind.Card, "SOUL", "Soul"), 5);
-        s.RecordCardCreated(2, new SourceRef(SourceKind.Card, "SHIV", "Shiv"));
-        RecapView v = RecapBuilder.Build(s, new[] { Alice, Bob }, new Dictionary<ulong, DefenseTotals>(), "h");
-        CreationRow bob = v.Creation.Single(x => x.PlayerId == Bob.NetId);
-        Check.Equal("Soul:5,Shiv:4", string.Join(",", bob.Cards.Select(c => $"{c.Label}:{c.Created}")), "most first");
-        Check.Equal(0, v.Creation.Single(x => x.PlayerId == Alice.NetId).Cards.Count, "alice made none");
-    }
-
-    [Test]
     public static void PetAttacksCountOnTheCardThatTriggeredThem()
     {
         var s = new RunStats();

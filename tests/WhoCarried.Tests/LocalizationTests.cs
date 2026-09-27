@@ -8,21 +8,6 @@ namespace WhoCarried.Tests;
 public static class LocalizationTests
 {
     [Test]
-    public static void CreationCopyCountsEveryCardWithoutAGiftsColumn()
-    {
-        foreach (string language in new[] { "eng", "zhs" })
-        {
-            var catalog = Loc.Read(language);
-            foreach (string suffix in new[] { "created_heading", "created_hint" })
-                Check.True(!string.IsNullOrWhiteSpace(catalog["WHO_CARRIED.support." + suffix]), language + " " + suffix);
-        }
-        // The panels show one count per card, with a bar; there's no gifts column left for the hint to explain.
-        Check.Equal("Includes cards made for yourself and teammates.", Loc.Read("eng")["WHO_CARRIED.support.created_hint"], "the hint");
-        Check.True(!Loc.Read("zhs")["WHO_CARRIED.support.created_hint"].Contains("赠予", StringComparison.Ordinal), "zhs hint has no gifts");
-        Check.True(Loc.Read("eng")["WHO_CARRIED.empty.support"].StartsWith("Cards created"), "solo creation supported");
-    }
-
-    [Test]
     public static void CatalogsHaveMatchingKeysAndPlaceholders()
     {
         var english = Loc.Read("eng");

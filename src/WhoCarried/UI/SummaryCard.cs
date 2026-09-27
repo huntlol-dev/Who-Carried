@@ -57,14 +57,13 @@ internal static class SummaryCard
         if (view.Debuffs.Applied.Count > 0)
             body.AddChild(Section(k, Loc.Text("WHO_CARRIED.tab.debuffs"), k.Icon(DebuffBuilder.IconPrefix + "VULNERABLE_POWER"),
                 DebuffsTab.Applied(k, view, Inner, 3, null), Loc.Text("WHO_CARRIED.debuffs.hint")));
-        if (view.HasCardCreation)
-            body.AddChild(Section(k, Loc.Text("WHO_CARRIED.support.created_heading"), GameArt.Get(GameArt.Cards),
-                CreationPanels.Create(k, view, Inner, null, compact: true)));
-        // Teammate gifts are independent of creation, which is useful in solo runs too.
         // Headed "Given to teammates", like the tab: one row of small cards, as many across as there are kinds given.
         if (view.HasSupport)
             body.AddChild(Section(k, Loc.Text("WHO_CARRIED.support.heading"), SupportTab.HeadingArt(k, view),
                 SupportTab.Cards(k, view, Inner, SupportTab.KindsGiven(view), null, compact: true), Loc.Text("WHO_CARRIED.support.hint")));
+        if (view.HasCardGifts)
+            body.AddChild(Section(k, Loc.Text("WHO_CARRIED.support.cards_given_heading"), GameArt.Get(GameArt.Cards),
+                CardGiftPanels.Create(k, view, Inner, null, compact: true), Loc.Text("WHO_CARRIED.support.cards_given_hint")));
         if (view.Defense.Count > 0)
             body.AddChild(Section(k, Loc.Text("WHO_CARRIED.tab.defense"), GameArt.Get(GameArt.Block), DefenseTab.Plates(k, view, Inner, 2, 104, null, compact: true)));
         if (view.Decks.Any(d => d.Entries.Count > 0))

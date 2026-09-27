@@ -68,14 +68,14 @@ internal static class DevPreview
         if (characters.Length == 0) characters = all.Take(4).ToArray();
         // The copy check's first player has a long name, to see it trimmed beside their gold.
         Sample sample = BuildSample(characters, wanted == "copy" ? LongName : null);
-        string? creationCase = options.FirstOrDefault(o => o.StartsWith("creation-", StringComparison.Ordinal));
-        if (creationCase != null)
+        string? giftsCase = options.FirstOrDefault(o => o.StartsWith("gifts-", StringComparison.Ordinal));
+        if (giftsCase != null)
         {
             Sample original = sample;
             sample = original with
             {
-                View = CreationPreview.Apply(original.View, creationCase),
-                Advance = () => CreationPreview.Apply(original.Advance(), creationCase, advanced: true),
+                View = CardGiftPreview.Apply(original.View, giftsCase),
+                Advance = () => CardGiftPreview.Apply(original.Advance(), giftsCase, advanced: true),
             };
         }
         if (wanted == "timer")
@@ -112,7 +112,7 @@ internal static class DevPreview
         {
             if (RecapUi.Open is not PanelHandle handle) return;
             RecapView later = sample.Advance();
-            handle.Tabs.CurrentTab = creationCase != null ? 4 : 0;
+            handle.Tabs.CurrentTab = giftsCase != null ? 4 : 0;
             RecapUi.Apply(later);
             Later.Run(1.2, () =>
             {
@@ -692,15 +692,16 @@ internal static class DevPreview
                 stats.RecordCardGeneration(P(2).NetId, P(3).NetId, soul, 2);
                 if (fight % 2 == 0) stats.RecordCardCreated(P(2).NetId, new SourceRef(SourceKind.Card, "SOVEREIGN_BLADE", GameText.Native("cards", "SOVEREIGN_BLADE.title", "SOVEREIGN_BLADE")));
                 // Co-op help: everyone gives the next player round a bit of everything, each leaning on one kind so
-                // every support award has a clear winner. In a solo preview these are gifts to yourself, which don't
-                // count; the tab still shows the cards created for yourself.
+                // every support award has a clear winner. Cards are made for the teammate, as in the game, so Cards
+                // given adds up to each player's Cards. In a solo preview these are gifts to yourself, which don't
+                // count, so Support says what it's for instead.
                 for (int i = 0; i < 4; i++)
                 {
                     ulong from = P(i).NetId, to = P(i + 1).NetId;
                     stats.RecordSupport(from, to, SupportKind.Buffs, help.Next(0, i == 0 ? 4 : 2));
                     stats.RecordSupport(from, to, SupportKind.Energy, help.Next(0, i == 1 ? 3 : 2));
                     stats.RecordSupport(from, to, SupportKind.Block, help.Next(0, i == 2 ? 12 : 4) * act);
-                    stats.RecordSupport(from, to, SupportKind.Cards, i == 2 ? fight % 2 + help.Next(0, 2) : help.Next(0, 5) / 4);
+                    stats.RecordCardGeneration(from, to, i % 2 == 0 ? shiv : soul, i == 2 ? fight % 2 + help.Next(0, 2) : help.Next(0, 5) / 4);
                     stats.RecordSupport(from, to, SupportKind.Draws, help.Next(0, i == 3 ? 3 : 2));
                 }
                 stats.EndFight();

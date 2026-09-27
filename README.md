@@ -12,7 +12,7 @@ When a run ends, the recap opens over the victory or defeat screen and deals eve
 - **Awards:** sixteen titles, one winner each (Heavy hitter, Enabler, Clutch, Protector, Battery, Care package, Bodyguard, Coach, Playmaker, Wall, Siege breaker, Fight leader, Jack of all trades, Card factory, Unscathed, Punching bag), plus the game's own end-of-run badges.
 - **Sources:** every card, relic, power, potion and orb that dealt damage, per player.
 - **Debuffs:** who stacked what, the damage Weak and Strength-down kept off the team, and what enemy debuffs cost each player.
-- **Support:** cards each player created (including Souls), for themselves or teammates, each with a bar against their most-made card, followed by the energy, cards, block, buffs and draws they gave teammates. Creation appears in solo runs too.
+- **Support:** the energy, cards, block, buffs and draws each player gave their teammates, then which cards they made for them (Souls included), each with a bar against the card they gave most.
 - **Timeline:** damage per fight across the run.
 - **Defense:** damage taken, blocked and healed, and how close anyone came to dying.
 - **Decks:** everyone's final deck, with the damage each card dealt, and the gold each player earned over the run.
