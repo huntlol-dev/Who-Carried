@@ -713,6 +713,7 @@ internal static class DevPreview
         // Co-op deaths: two for one player, one for another, none for the rest (so both card layouts show).
         if (players.Count > 1) stats.RecordDeath(P(1).NetId, 2);
         if (players.Count > 3) stats.RecordDeath(P(3).NetId);
+        stats.RecordHpCut(P(0).NetId, new SourceRef(SourceKind.Relic, "FUR_COAT", "Fur Coat"), 312);
         stats.Finished = true;
         stats.Victory = true;
         static EarnedBadge B(string id, string rarity) => new() { Id = id, Rarity = rarity };

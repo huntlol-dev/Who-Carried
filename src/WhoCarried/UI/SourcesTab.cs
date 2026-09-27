@@ -96,13 +96,22 @@ internal static class SourcesTab
         Label none = k.Text(Loc.Text("WHO_CARRIED.empty.sources"), 16, RecapTheme.Muted);
         column.AddChild(none);
 
-        var rows = new KeyedRows<(BarRow Row, int Max)>(column, r => RecapTexts.SourceKey(r.Row), r => Row(k, r, width, accent), offset: 2);
+        // HP the player's effects cut without hitting (Fur Coat): its own line, never damage.
+        Label cut = k.Text("", 14, RecapTheme.Muted);
+        cut.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        cut.CustomMinimumSize = k.V(width - 12, 0);
+        column.AddChild(cut);
+
+        var rows = new KeyedRows<(BarRow Row, int Max)>(column, r => RecapTexts.SourceKey(r.Row), r => Row(k, r, width, accent), offset: 3);
         void Apply((SourcesView Source, int Rank, int Max) it)
         {
             rank.Text = it.Rank > 0 ? it.Rank.ToString() : "";
             gem.Visible = it.Rank > 0;
             total.Set(it.Source.Rows.Sum(r => r.Value));
             none.Visible = it.Source.Rows.Count == 0;
+            string cuts = RecapBuilder.HpCutText(it.Source.HpCuts ?? Array.Empty<HpCutPart>());
+            cut.Text = cuts;
+            cut.Visible = cuts.Length > 0;
             rows.Sync(it.Source.Rows.Select(r => (r, it.Max)));
         }
         Apply(item);
