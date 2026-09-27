@@ -35,6 +35,8 @@ internal static class RecapUi
     private static Vector2 _laidOutFor;
     private static bool _resizePending;
     private static bool _copying;
+    private static int _statusVersion;
+    private static int _copiedVersion;
 
     /// <summary>The open recap, or null. A resize replaces it, so hold on to this only for the moment.</summary>
     public static PanelHandle? Open => _handle != null && GodotObject.IsInstanceValid(_handle.Root) ? _handle : null;
@@ -199,7 +201,7 @@ internal static class RecapUi
     /// </summary>
     private static void Export(RecapView view, Func<string?, Texture2D?> icons, PanelHandle handle)
     {
-        handle.Status.Text = Loc.Text("WHO_CARRIED.export.saving");
+        SetStatus(handle, Loc.Text("WHO_CARRIED.export.saving"));
         PngExporter.Render(SummaryCard.Create(view, icons), SummaryCard.Width, (image, error) =>
         {
             if (image == null)
@@ -234,7 +236,7 @@ internal static class RecapUi
     {
         if (_copying) return;
         _copying = true;
-        if (GodotObject.IsInstanceValid(handle.Status)) handle.Status.Text = Loc.Text("WHO_CARRIED.copy.copying");
+        SetStatus(handle, Loc.Text("WHO_CARRIED.copy.copying"));
         void Failed(string? reason)
         {
             _copying = false;
@@ -264,10 +266,11 @@ internal static class RecapUi
                         $"copied summary to clipboard, {width}×{height}, {pngBytes / 1048576.0:0.0} MB"));
                     Say(handle, Loc.Text("WHO_CARRIED.copy.done", OperatingSystem.IsMacOS() ? "Cmd+V" : "Ctrl+V"));
                     if (!GodotObject.IsInstanceValid(handle.Root)) return;
+                    int copiedVersion = ++_copiedVersion;
                     handle.ShowCopied(true);
                     Later.Run(2.0, () =>
                     {
-                        if (GodotObject.IsInstanceValid(handle.Root)) handle.ShowCopied(false);
+                        if (copiedVersion == _copiedVersion && GodotObject.IsInstanceValid(handle.Root)) handle.ShowCopied(false);
                     });
                 });
             });
@@ -279,13 +282,24 @@ internal static class RecapUi
         }
     }
 
-    /// <summary>A message in the status line, cleared four seconds later, if the recap is still open.</summary>
+    /// <summary>
+    /// Sets the status line and bumps its version, so a stale clear — or a stale write racing in behind a newer one —
+    /// can never stomp a message that came after it.
+    /// </summary>
+    private static int SetStatus(PanelHandle handle, string text)
+    {
+        int version = ++_statusVersion;
+        if (GodotObject.IsInstanceValid(handle.Status)) handle.Status.Text = text;
+        return version;
+    }
+
+    /// <summary>A message in the status line, cleared four seconds later — unless something newer has been said since.</summary>
     private static void Say(PanelHandle handle, string text)
     {
-        if (GodotObject.IsInstanceValid(handle.Status)) handle.Status.Text = text;
+        int version = SetStatus(handle, text);
         Later.Run(4.0, () =>
         {
-            if (GodotObject.IsInstanceValid(handle.Status)) handle.Status.Text = "";
+            if (version == _statusVersion && GodotObject.IsInstanceValid(handle.Status)) handle.Status.Text = "";
         });
     }
 
