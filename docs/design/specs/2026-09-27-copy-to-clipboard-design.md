@@ -1,6 +1,6 @@
 # Copy to clipboard
 
-Date: 2026-09-27. Draft for review. Branch: `feat/copy-to-clipboard`. Plan: to follow.
+Date: 2026-09-27. Draft for review. Branch: `feat/copy-to-clipboard`. Plan: [copy to clipboard](../plans/2026-09-27-copy-to-clipboard.md).
 
 ## Intent
 
@@ -51,15 +51,15 @@ In design pixels, as in the approved mockup:
 
 | Part | Where | Built from |
 |---|---|---|
-| Top bar | 0–74, full width | The recap's bar without its controls: "Who Carried? · Victory" (or Defeat, or the act mid-run), floor, time, Ascension, team damage, the party's coins, and the date on the right, where the hotkey and Close are in the recap. It shares its code with the exported image's bar. |
+| Top bar | 0–78, full width (the exported image's bar height) | The recap's bar without its controls: "Who Carried? · Victory" (or Defeat, or the act mid-run), floor, time, Ascension, team damage, the party's coins, and the date on the right, where the hotkey and Close are in the recap. It shares its code with the exported image's bar. |
 | Hand | x 0–1200; the top from a new `HandLayout.TopBelow`: as high as it goes with every card and gem 16 below the bar | `ScoreboardTab.PlayerCard`, placed by `HandLayout.Layout`, neither dealt nor animated. The leader's foil is held still (`foilAt: 0.42f`, as on the export). Skull pills, plaques and badges come with the card. |
 | Your run | Solo only, beside the card, as on the scoreboard | `ScoreboardTab.Story` |
-| Note | Under the hand, y 598 | The scoreboard's note: bonus damage (parties only) and unattributed damage |
-| Top sources | x 1222, y 92, 340 wide | `ScoreboardTab.TopSources`, with a new option that puts each player's gold earned beside their name (below). Rows per player from `ShareLayout.SourceRows`: 6 solo, 4 each for two players, 2 each for three or four, 1 each for five or more. |
-| Bottom row | From y 636, x 40–1560 | **Given to teammates** (below). When nobody gave anything (`HasSupport` is false, which includes every solo run), the climb instead: `Climb.Create(…, interactive: false, live: null)`. |
+| Note | Under the hand, y 608 | The scoreboard's note: bonus damage (parties only) and unattributed damage |
+| Top sources | x 1222, y 96, 340 wide | `ScoreboardTab.TopSources`, with a new option that puts each player's gold earned beside their name (below). Rows per player from `ShareLayout.SourceRows`: 6 solo, 4 each for two players, 2 each for three or four, 1 each for five or more. |
+| Bottom row | From y 640 (lower if Top sources reaches further), x 40–1560 | **Given to teammates** (below). When nobody gave anything (`HasSupport` is false, which includes every solo run), the climb instead: `Climb.Create(…, interactive: false, live: null)`. |
 | Footer | The last 34 | The exported image's footer: seed, party size, the final fight once the run is over, and "Who Carried? · a Slay the Spire 2 mod" |
 
-The page is a column at least 900 tall: the fixed top section (0–636), then the bottom row, then the footer at the bottom. Its height follows the bottom row, so nothing is ever cut off. Five players who all gave block make a block card five lines tall, and the picture about 956 tall.
+The page is a column at least 900 tall: the fixed top section (0–640), then the bottom row, then the footer at the bottom. Its height follows the bottom row, so nothing is ever cut off. Five players who all gave block make a block card five lines tall, and the picture about 956 tall.
 
 ### Gold earned
 
