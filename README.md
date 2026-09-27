@@ -23,7 +23,7 @@ When a run ends, the recap opens over the victory or defeat screen and deals eve
 
 - **Client side.** Only one player needs it. The manifest sets `affects_gameplay: false`, so the game doesn't compare it between co-op players, and the mod only reads game state: it never runs game commands, so it can't desync a run.
 - **Modded content.** Nothing is hard-coded per character. Damage is read where the game applies it, so modded characters, cards, powers and summons are credited like vanilla ones. Tested with 10+ custom characters, 5-player lobbies and an extra-act mod.
-- **Fair credit.** Shared Poison and Doom are split by each player's part of the pile, tick by tick. Vulnerable, Weak and Strength-down are credited to whoever applied them, and exact ties take turns.
+- **Fair credit.** Shared Poison and Doom are split by each player's part of the pile, tick by tick. Vulnerable, Weak and Strength-down are credited to whoever applied them, and exact ties take turns. Hits on an enemy whose health bar shows infinite (an undying phase) don't count.
 - **Generated cards.** Soulbound's extra Souls credit the buff's applier and count as gifts when they go to a teammate. Existing saves retain their old totals; missing historical gift details and old attribution are not reconstructed.
 - **Game versions.** One build runs on both the public branch (v0.107) and the beta (v0.111); `Game/GameCompat.cs` looks up the few game APIs that differ by name.
 - **Controller** support: bumpers switch tabs, the d-pad moves around.
