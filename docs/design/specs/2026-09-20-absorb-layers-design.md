@@ -24,7 +24,7 @@ Two consequences, accepted:
 - A player's blocked total can exceed the block they actually gained. The Defense tab's note changes to say so: "The shield is damage your own block, and any armour a mod adds, soaked up."
 - `Wall` and `Siege breaker` count armour as well as block.
 
-A run without such a mod records zero absorbed, so nothing about it changes.
+The base game's own HP-loss caps on enemies (Slippery, Hardened Shell) are not armour and aren't counted; see [vanilla attribution fixes](2026-09-27-vanilla-attribution-fixes-design.md).
 
 ## How it's measured
 

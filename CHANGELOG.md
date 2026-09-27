@@ -21,6 +21,10 @@
 
 ### Fixed
 
+- Vantom, Inklets and Skulking Colony no longer hand out fake "block knocked off": their HP caps (Slippery, Hardened Shell) were counted as enemy block, which could decide Siege breaker.
+- Debilitate gets credit for the extra Vulnerable damage and Weak protection it adds, instead of whoever applied the Vulnerable or Weak. Paper Phrog, Cruelty and Paper Krane's extra no longer goes to the debuff's applier either.
+- Block that Expose strips from an enemy counts as block knocked off.
+
 - Hitting an enemy that can't die right now no longer counts as damage. The Waterfall Giant's last turn after it's beaten, and modded enemies with the same kind of undying phase, show an infinite health bar; attacks into them used to pad the attacker's damage and block knocked off. The blow that knocks the Giant down still counts, and so does everything done against its final attack. Runs recorded before this update keep their old totals.
 
 - Who Carried no longer changes how other mods' effects play when they're built on one shared generic class. Since 1.2.0, watching them could make every version of that class run as the same one: several "auto-play your Form card at the start of combat" runes each looked for the same card, so all but one did nothing, and in co-op the first turn could desync. Hooks in generic classes are no longer watched; their damage just isn't credited to them.
