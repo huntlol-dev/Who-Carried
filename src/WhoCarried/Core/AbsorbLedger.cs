@@ -44,4 +44,10 @@ public sealed class AbsorbLedger
 
     /// <summary>Forgets everything (a fight started or ended).</summary>
     public void Clear() => _byTarget.Clear();
+
+    /// <summary>
+    /// Whether what a layer took off counts as armour. The game's own content only caps HP loss on enemies (Slippery,
+    /// Hardened Shell): that isn't block anyone knocked off. On players every layer counts, as the absorb spec decided.
+    /// </summary>
+    public static bool CountsOn(bool enemy, bool gameContentActed) => !(enemy && gameContentActed);
 }

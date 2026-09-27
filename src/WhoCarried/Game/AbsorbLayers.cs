@@ -19,7 +19,13 @@ internal static class AbsorbLayers
     {
         decimal eaten = before - after;
         if (eaten <= 0m) return;
-        Ledger.Add(target, eaten, Layer(modifiers));
+        List<AbstractModel> acted = Safe(modifiers);
+        if (!AbsorbLedger.CountsOn(target.IsEnemy, acted.Any(IsGameContent)))
+        {
+            Tracker.Note($"caps on {target.Monster?.Id.Entry ?? "?"} ate {(int)eaten} hp ({string.Join(", ", acted.Select(m => m.Id.Entry))}), not counted");
+            return;
+        }
+        Ledger.Add(target, eaten, Layer(acted));
     }
 
     /// <summary>What this creature's layers ate on the hit that just landed, and what they were called. Clears it.</summary>
@@ -28,13 +34,20 @@ internal static class AbsorbLayers
     /// <summary>A hit on this creature is starting: anything still counted for it is stale.</summary>
     public static void Starting(Creature target) => Ledger.Clear(target);
 
-    /// <summary>
-    /// The last model the game was told changed this HP loss, as a hint for the log. Layers that reduce the amount
-    /// without adding themselves leave nothing to name, which is why the amount is counted on its own.
-    /// </summary>
-    private static string? Layer(IEnumerable<AbstractModel>? modifiers)
+    private static readonly System.Reflection.Assembly Game = typeof(AbstractModel).Assembly;
+
+    /// <summary>The game's own content, not a mod's.</summary>
+    private static bool IsGameContent(AbstractModel model) => model.GetType().Assembly == Game;
+
+    private static List<AbstractModel> Safe(IEnumerable<AbstractModel>? modifiers)
     {
-        try { return modifiers?.LastOrDefault()?.Id.Entry; }
+        try { return modifiers?.ToList() ?? new List<AbstractModel>(); }
+        catch (Exception) { return new List<AbstractModel>(); }
+    }
+
+    private static string? Layer(IReadOnlyList<AbstractModel> acted)
+    {
+        try { return acted.LastOrDefault()?.Id.Entry; }
         catch (Exception) { return null; }
     }
 }

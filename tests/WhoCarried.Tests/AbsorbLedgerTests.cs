@@ -119,4 +119,13 @@ public static class AbsorbLedgerTests
         Check.Equal(8, amount, "counted");
         Check.Equal(0, layers.Count, "no name to show");
     }
+    [Test]
+    public static void TheGamesOwnCapsOnAnEnemyArentArmour()
+    {
+        // Slippery (1 HP per hit) and Hardened Shell (HP per turn) take HP loss away in the same hook as a mod's armour.
+        Check.True(!AbsorbLedger.CountsOn(enemy: true, gameContentActed: true), "a game cap on an enemy");
+        Check.True(AbsorbLedger.CountsOn(enemy: true, gameContentActed: false), "a mod's armour on an enemy");
+        Check.True(AbsorbLedger.CountsOn(enemy: false, gameContentActed: true), "Buffer or Tungsten Rod on a player");
+        Check.True(AbsorbLedger.CountsOn(enemy: false, gameContentActed: false), "a mod's armour on a player");
+    }
 }
