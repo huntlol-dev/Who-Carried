@@ -16,6 +16,7 @@
 - The Esc key beside Close on the recap's top bar can be clicked to close it, and lights gold on hover like the hotkey's key.
 - The damage number on every scoreboard card sits at the same height, whether or not the player has bonus damage. It's a little smaller, with room above it.
 - Export as image moves to a plain stone beside Copy to clipboard, which takes the bronze one.
+- Long messages on the recap's top bar wrap onto a second line instead of running under Escape and Close.
 
 ### Fixed
 
