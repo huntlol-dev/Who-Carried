@@ -6,6 +6,22 @@ The Workshop workspace lives **outside this repo**, in a sibling folder beside i
 (`<parent>\Who-Carried-workshop\`). It holds the uploader, the staged `content\`,
 `workshop.json`, `description.txt` and the preview images. Nothing in it is tracked here.
 
+## Next release: three features waiting
+
+Specced and planned on 2026-09-27, held back from the release that shipped the HP cut, the
+vanilla attribution fixes and infinite-HP phases. Each branch holds only its spec and plan, which
+are already on `main`, so git lists them as merged: **don't delete them**. Start each one by
+fast-forwarding it to `main`, implement it, then merge it the same way.
+
+| Branch | Spec | Plan |
+|---|---|---|
+| `feature/protection-given` | [damage prevented for teammates](design/specs/2026-09-27-protection-given-design.md) | [plan](design/plans/2026-09-27-protection-given.md) |
+| `feature/healing-given` | [healing given to teammates](design/specs/2026-09-27-healing-given-design.md) | [plan](design/plans/2026-09-27-healing-given.md) |
+| `feature/strength-given` | [damage from Strength you gave](design/specs/2026-09-27-strength-given-design.md) | [plan](design/plans/2026-09-27-strength-given.md) |
+
+Protection and healing both add Support kinds and awards, and strength adds to the damage maths,
+so do them one after another rather than side by side. Delete this section once they've shipped.
+
 ## Local install
 
 ```
