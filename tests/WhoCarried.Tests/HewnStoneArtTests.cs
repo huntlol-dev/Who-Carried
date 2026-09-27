@@ -64,4 +64,18 @@ public static class HewnStoneArtTests
     {
         Check.True(HewnStoneArt.Draw(HewnStoneArt.Palette.Default, 8) == null, "8px can't hold two 10px corners");
     }
+
+    [Test]
+    public static void ThePlainStoneHasTheSameShapeAndFaceWithAGreyRim()
+    {
+        HewnStoneArt.Result bronze = Tile();
+        HewnStoneArt.Result? drawn = HewnStoneArt.Draw(HewnStoneArt.Palette.Plain);
+        Check.True(drawn != null, "the plain tile draws");
+        HewnStoneArt.Result plain = drawn!.Value;
+        int middle = plain.Width / 2;
+        Check.Equal(At(bronze, middle, middle), At(plain, middle, middle), "the same face");
+        Check.Equal(HewnStoneArt.Rgba.Clear, At(plain, 0, 0), "the same cut corner");
+        Check.Equal(HewnStoneArt.Palette.Plain.Rim, At(plain, middle, 1), "the plain rim");
+        Check.True(At(bronze, middle, 1) != At(plain, middle, 1), "not the bronze");
+    }
 }

@@ -1,3 +1,4 @@
+using System.Globalization;
 using Godot;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Nodes.Screens.GameOverScreen;
@@ -33,6 +34,7 @@ internal static class RecapUi
     private static Func<string?, Texture2D?>? _icons;
     private static Vector2 _laidOutFor;
     private static bool _resizePending;
+    private static bool _copying;
 
     /// <summary>The open recap, or null. A resize replaces it, so hold on to this only for the moment.</summary>
     public static PanelHandle? Open => _handle != null && GodotObject.IsInstanceValid(_handle.Root) ? _handle : null;
@@ -77,7 +79,8 @@ internal static class RecapUi
         Hide();
         _cards = cards;
         _currentView = view;
-        PanelHandle handle = RecapPanel.Create(view, icons, cards, Hide, h => Export(_currentView ?? view, icons, h));
+        PanelHandle handle = RecapPanel.Create(view, icons, cards, Hide, h => Export(_currentView ?? view, icons, h),
+            h => CopyToClipboard(_currentView ?? view, icons, h));
         _panel = handle.Root;
         _handle = handle;
         _icons = icons;
@@ -197,20 +200,12 @@ internal static class RecapUi
     private static void Export(RecapView view, Func<string?, Texture2D?> icons, PanelHandle handle)
     {
         handle.Status.Text = Loc.Text("WHO_CARRIED.export.saving");
-        void Show(string text)
-        {
-            if (GodotObject.IsInstanceValid(handle.Status)) handle.Status.Text = text;
-            Later.Run(4.0, () =>
-            {
-                if (GodotObject.IsInstanceValid(handle.Status)) handle.Status.Text = "";
-            });
-        }
         PngExporter.Render(SummaryCard.Create(view, icons), SummaryCard.Width, (image, error) =>
         {
             if (image == null)
             {
                 Tracker.Note($"export failed: {error}");
-                Show(Loc.Text("WHO_CARRIED.export.failed"));
+                Say(handle, Loc.Text("WHO_CARRIED.export.failed"));
                 return;
             }
             if (SteamScreenshot.Available)
@@ -218,7 +213,7 @@ internal static class RecapUi
                 SteamScreenshot.Write(image, $"{RecapTexts.ModName} {view.Header}", steamError =>
                 {
                     Tracker.Note(steamError == null ? "exported to Steam screenshots" : $"Steam export failed: {steamError}");
-                    Show(steamError == null ? Loc.Text("WHO_CARRIED.export.steam") : Loc.Text("WHO_CARRIED.export.failed"));
+                    Say(handle, steamError == null ? Loc.Text("WHO_CARRIED.export.steam") : Loc.Text("WHO_CARRIED.export.failed"));
                 });
                 return;
             }
@@ -226,7 +221,71 @@ internal static class RecapUi
             string path = Path.Combine(PngExporter.FallbackFolder, $"run-{DateTime.Now:yyyy-MM-dd_HHmm}-{result}.png");
             string? saveError = PngExporter.SavePng(image, path);
             Tracker.Note(saveError == null ? $"exported {path}" : $"export failed: {saveError}");
-            Show(saveError == null ? Loc.Text("WHO_CARRIED.export.saved", PngExporter.FallbackFolder) : Loc.Text("WHO_CARRIED.export.failed"));
+            Say(handle, saveError == null ? Loc.Text("WHO_CARRIED.export.saved", PngExporter.FallbackFolder) : Loc.Text("WHO_CARRIED.export.failed"));
+        });
+    }
+
+    /// <summary>
+    /// Copy to clipboard: renders the picture players paste into Discord (<see cref="ShareCard"/>) and puts it on the
+    /// clipboard. A click while a copy is under way is ignored. The recap may close before it's done; nothing here then
+    /// touches it, and the next copy still works.
+    /// </summary>
+    private static void CopyToClipboard(RecapView view, Func<string?, Texture2D?> icons, PanelHandle handle)
+    {
+        if (_copying) return;
+        _copying = true;
+        if (GodotObject.IsInstanceValid(handle.Status)) handle.Status.Text = Loc.Text("WHO_CARRIED.copy.copying");
+        void Failed(string? reason)
+        {
+            _copying = false;
+            Tracker.Note($"copy failed: {reason}");
+            Say(handle, Loc.Text("WHO_CARRIED.copy.failed", Loc.Text("WHO_CARRIED.action.save_image")));
+        }
+        try
+        {
+            PngExporter.Render(ShareCard.Create(view, icons), ShareCard.PixelWidth, (image, error) =>
+            {
+                if (image == null)
+                {
+                    Failed(error);
+                    return;
+                }
+                int width = image.GetWidth(), height = image.GetHeight();
+                ImageClipboard.Copy(image, (copyError, pngBytes) =>
+                {
+                    image.Dispose();
+                    if (copyError != null)
+                    {
+                        Failed(copyError);
+                        return;
+                    }
+                    _copying = false;
+                    Tracker.Note(string.Create(CultureInfo.InvariantCulture,
+                        $"copied summary to clipboard, {width}×{height}, {pngBytes / 1048576.0:0.0} MB"));
+                    Say(handle, Loc.Text("WHO_CARRIED.copy.done", OperatingSystem.IsMacOS() ? "Cmd+V" : "Ctrl+V"));
+                    if (!GodotObject.IsInstanceValid(handle.Root)) return;
+                    handle.ShowCopied(true);
+                    Later.Run(2.0, () =>
+                    {
+                        if (GodotObject.IsInstanceValid(handle.Root)) handle.ShowCopied(false);
+                    });
+                });
+            });
+        }
+        catch (Exception e)
+        {
+            Tracker.LogError("copy: building the picture", e);
+            Failed(e.Message);
+        }
+    }
+
+    /// <summary>A message in the status line, cleared four seconds later, if the recap is still open.</summary>
+    private static void Say(PanelHandle handle, string text)
+    {
+        if (GodotObject.IsInstanceValid(handle.Status)) handle.Status.Text = text;
+        Later.Run(4.0, () =>
+        {
+            if (GodotObject.IsInstanceValid(handle.Status)) handle.Status.Text = "";
         });
     }
 

@@ -1,5 +1,7 @@
 {
   "WHO_CARRIED.action.close": "关闭",
+  "WHO_CARRIED.action.copied": "已复制",
+  "WHO_CARRIED.action.copy_image": "复制到剪贴板",
   "WHO_CARRIED.action.save_image": "导出战绩图",
   "WHO_CARRIED.award.battery": "充电宝",
   "WHO_CARRIED.award.battery_detail": "给队友的能量",
@@ -41,6 +43,9 @@
   "WHO_CARRIED.awards.one": "1 项荣誉",
   "WHO_CARRIED.awards.team_count": "{0} 项荣誉，每项一名得主",
   "WHO_CARRIED.awards.wait": "徽章将在本局结束时结算。",
+  "WHO_CARRIED.copy.copying": "正在复制…",
+  "WHO_CARRIED.copy.done": "已复制，按 {0} 即可粘贴",
+  "WHO_CARRIED.copy.failed": "图片复制失败，请改用“{0}”",
   "WHO_CARRIED.debuffs.applied": "对敌施加的减益",
   "WHO_CARRIED.debuffs.bonus_sentence": "因此为队友增加了 {0} 点伤害。",
   "WHO_CARRIED.debuffs.cost": "敌方减益造成的损失",

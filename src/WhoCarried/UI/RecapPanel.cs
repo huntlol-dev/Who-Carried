@@ -12,10 +12,10 @@ internal sealed record HotkeyLine(Button Cap, Label Text, Label Hint, Action<Hew
 
 /// <summary>
 /// What the caller needs to drive an open recap: switch views, show a status message, push live updates, and what the
-/// controller can do (each view's rows, close, save).
+/// controller and mouse can do (each view's rows, close, save, copy), and the Copied look on the copy button.
 /// </summary>
 internal sealed record PanelHandle(Control Root, TabContainer Tabs, Label Status, HotkeyLine Hotkey, Live Live, IReadOnlyList<PadTab> Pads,
-                                   Action Close, Action Save);
+                                   Action Close, Action Save, Action Copy, Action<bool> ShowCopied);
 
 /// <summary>
 /// The full-screen recap in the "Dealt" style: the card table, the game's top bar with the result and the run's
@@ -28,7 +28,7 @@ internal static class RecapPanel
     private static readonly string[] Views = { "WHO_CARRIED.tab.scoreboard", "WHO_CARRIED.tab.awards", "WHO_CARRIED.tab.sources", "WHO_CARRIED.tab.debuffs", "WHO_CARRIED.tab.support", "WHO_CARRIED.tab.timeline", "WHO_CARRIED.tab.defense", "WHO_CARRIED.tab.decks" };
 
     public static PanelHandle Create(RecapView view, Func<string?, Texture2D?> icons, CardVisuals? cards,
-                                     Action onClose, Action<PanelHandle> onSave)
+                                     Action onClose, Action<PanelHandle> onSave, Action<PanelHandle> onCopy)
     {
         Vector2 screen = ScreenSize();
         float scale = Math.Min(screen.X / DesignW, screen.Y / DesignH);
@@ -47,16 +47,28 @@ internal static class RecapPanel
         root.AddChild(stage);
 
         Label status = k.Text("", 15, RecapTheme.Faint);
-        Button save = HewnStone.Slab(k, Loc.Text("WHO_CARRIED.action.save_image"), HewnStone.SlabHeight);
+        // Copy to clipboard is the main action, on the bronze stone; Export as image sits beside it on the plain one.
+        Button copy = HewnStone.Slab(k, Loc.Text("WHO_CARRIED.action.copy_image"), HewnStone.SlabHeight);
+        HoldWidth(copy, Loc.Text("WHO_CARRIED.action.copied"));
+        Color copyIdle = copy.GetThemeColor("font_color"), copyHover = copy.GetThemeColor("font_hover_color");
+        Button save = HewnStone.Slab(k, Loc.Text("WHO_CARRIED.action.save_image"), HewnStone.SlabHeight, HewnStoneArt.Palette.Plain);
         var tabs = new TabContainer { TabsVisible = false, Size = stage.Size, MouseFilter = Control.MouseFilterEnum.Ignore };
         tabs.AddThemeStyleboxOverride("panel", new StyleBoxEmpty());
         stage.AddChild(tabs);
         PadTab[] pads = Views.Select(_ => new PadTab()).ToArray();
         PanelHandle? handle = null;
         void Save() => onSave(handle!);
+        void Copy() => onCopy(handle!);
+        // "Copied", in green, while the status line says how to paste; then the label again.
+        void ShowCopied(bool copied)
+        {
+            copy.Text = Loc.Text(copied ? "WHO_CARRIED.action.copied" : "WHO_CARRIED.action.copy_image");
+            copy.AddThemeColorOverride("font_color", copied ? RecapTheme.Green : copyIdle);
+            copy.AddThemeColorOverride("font_hover_color", copied ? RecapTheme.Green : copyHover);
+        }
         var hints = new PadHints();
         Control bar = TopBar(k, view, status, onClose, live, screen.X, stage.Position.X, hints, out HotkeyLine hotkeyLine);
-        handle = new PanelHandle(root, tabs, status, hotkeyLine, live, pads, onClose, Save);
+        handle = new PanelHandle(root, tabs, status, hotkeyLine, live, pads, onClose, Save, Copy, ShowCopied);
 
         tabs.AddChild(Safe(k, 0, pads[0], () => ScoreboardTab.Create(k, view, live, deal: true, pads[0])));
         tabs.AddChild(Safe(k, 1, pads[1], () => AwardsTab.Create(k, view, live)));
@@ -67,10 +79,11 @@ internal static class RecapPanel
         tabs.AddChild(Safe(k, 6, pads[6], () => DefenseTab.Create(k, view, live)));
         tabs.AddChild(Safe(k, 7, pads[7], () => DecksTab.Create(k, view, cards, live, pads[7])));
 
+        copy.Pressed += Copy;
         save.Pressed += Save;
         if (GameCompat.Confirm is StringName confirm) hints.OnButton(save, confirm);
         root.AddChild(bar);
-        stage.AddChild(Nav(k, tabs, hints, save));
+        stage.AddChild(Nav(k, tabs, hints, copy, save));
         hints.Attach(root);
         return handle;
     }
@@ -290,11 +303,23 @@ internal static class RecapPanel
         return coin;
     }
 
+    /// <summary>Keeps a button wide enough for either of its labels, so switching between them moves nothing beside it.</summary>
+    private static void HoldWidth(Button button, string other)
+    {
+        string shown = button.Text;
+        float width = button.GetCombinedMinimumSize().X;
+        button.Text = other;
+        width = Math.Max(width, button.GetCombinedMinimumSize().X);
+        button.Text = shown;
+        button.CustomMinimumSize = new Vector2(width, button.CustomMinimumSize.Y);
+        button.Size = new Vector2(width, button.Size.Y);
+    }
+
     /// <summary>
     /// The tabs: plain words; the chosen one is white with a gold brush stroke under it, painted in left to right
     /// each time a tab is chosen. Stays in sync when the view is switched from code (dev preview).
     /// </summary>
-    private static Control Nav(Kit k, TabContainer tabs, PadHints hints, Button save)
+    private static Control Nav(Kit k, TabContainer tabs, PadHints hints, Button copy, Button save)
     {
         // Where the tabs sit is shared with the scoreboard, whose cards keep clear of them (HandLayout).
         const float top = HandLayout.TabsTop;
@@ -327,11 +352,30 @@ internal static class RecapPanel
             x += width + 30;
         }
 
-        // Leave space after the measured, translated tabs (including the controller hint).
-        save.Position = k.V(x + 20, HandLayout.TabLine - HewnStone.SlabHeight - HewnStone.ShadowDrop - top);
-        nav.AddChild(HewnStone.Shadow(k, save));
+        // Leave space after the measured, translated tabs (including the controller hint): Copy to clipboard, then
+        // Export as image.
+        float slabY = HandLayout.TabLine - HewnStone.SlabHeight - HewnStone.ShadowDrop - top;
+        copy.Position = k.V(x + 20, slabY);
+        nav.AddChild(HewnStone.Shadow(k, copy));
+        nav.AddChild(copy);
+        HewnStone.Lift(copy, k);
+        // Export as image follows Copy, and moves along if Copy's word comes out wider once it's drawn: a substitute
+        // font (Chinese) can widen a word after the first measure, as it did Close's.
+        Panel saveShadow = HewnStone.Shadow(k, save);
+        Vector2 saveRest = Vector2.Zero;
+        void PlaceSave()
+        {
+            float copyWidth = Math.Max(copy.Size.X, copy.GetCombinedMinimumSize().X);
+            saveRest = new Vector2(copy.Position.X + copyWidth + k.U(16), k.U(slabY));
+            save.Position = saveRest;
+            saveShadow.Position = saveRest + k.V(0, HewnStone.ShadowDrop);
+        }
+        PlaceSave();
+        copy.MinimumSizeChanged += PlaceSave;
+        copy.Resized += PlaceSave;
+        nav.AddChild(saveShadow);
         nav.AddChild(save);
-        HewnStone.Lift(save, k);
+        HewnStone.Lift(save, k, () => saveRest);
 
         // LB and RB either side of the tabs, in controller mode only.
         float glyphY = (HandLayout.TabsBottom - top - 28) / 2;

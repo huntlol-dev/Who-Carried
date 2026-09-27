@@ -522,28 +522,32 @@ internal static class DevPreview
     }
 
     /// <summary>
-    /// "copy" in the flag: the Copy to clipboard picture for a sample whose first player has a long name, saved as
-    /// preview-copy-share.png (and a mid-run one as preview-share-midrun.png), then put on the clipboard and read back.
-    /// The log names the clipboard's formats and the size Godot reads back. Overwrites the clipboard.
+    /// "copy" in the flag: Copy to clipboard for real, on a sample whose first player has a long name. Saves the picture
+    /// (preview-copy-share.png, and a mid-run one as preview-share-midrun.png). Clicks the button and closes the recap
+    /// straight away, which must not throw; then opens it again and double-clicks, which must copy once. Screenshots the
+    /// Copied button and the status line (preview-copy.png), and reads the clipboard back. Overwrites the clipboard.
     /// </summary>
     private static void CheckCopy(string dataDir, Sample sample)
     {
         SaveShare(dataDir, "preview-share-midrun.png", sample.View with { Victory = null }, sample.Icons, () =>
-            PngExporter.Render(ShareCard.Create(sample.View, sample.Icons), ShareCard.PixelWidth, (image, error) =>
+            SaveShare(dataDir, "preview-copy-share.png", sample.View, sample.Icons, () =>
             {
-                if (image == null)
+                RecapUi.ShowView(sample.View, sample.Icons, new CardVisuals(sample.CardFor)).Copy();
+                RecapUi.Hide();
+                Later.Run(2.5, () =>
                 {
-                    Tracker.Note($"preview copy: render failed: {error}");
-                    Tracker.Note("preview done");
-                    return;
-                }
-                PngExporter.SavePng(image, Path.Combine(dataDir, "preview-copy-share.png"));
-                ImageClipboard.Copy(image, (copyError, bytes) =>
-                {
-                    Tracker.Note($"preview copy: {copyError ?? "copied"}, {image.GetWidth()}×{image.GetHeight()}, {bytes} bytes");
-                    image.Dispose();
-                    ReadBack();
-                    Tracker.Note("preview done");
+                    PanelHandle handle = RecapUi.ShowView(sample.View, sample.Icons, new CardVisuals(sample.CardFor));
+                    handle.Copy();
+                    handle.Copy(); // a double-click: events.log gains one copy line for the two
+                    // A copy takes about half a second; "Copied" then shows for two, the status line for four.
+                    Later.Run(1.5, () =>
+                    {
+                        ((SceneTree)Engine.GetMainLoop()).Root.GetTexture().GetImage().SavePng(Path.Combine(dataDir, "preview-copy.png"));
+                        Tracker.Note($"preview copy: status '{handle.Status.Text}'");
+                        ReadBack();
+                        RecapUi.Hide();
+                        Tracker.Note("preview done");
+                    });
                 });
             }));
     }

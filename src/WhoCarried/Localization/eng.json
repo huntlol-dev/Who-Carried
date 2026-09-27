@@ -1,5 +1,7 @@
 {
   "WHO_CARRIED.action.close": "Close",
+  "WHO_CARRIED.action.copied": "Copied",
+  "WHO_CARRIED.action.copy_image": "Copy to clipboard",
   "WHO_CARRIED.action.save_image": "Export as image",
   "WHO_CARRIED.award.battery": "Battery",
   "WHO_CARRIED.award.battery_detail": "energy given to teammates",
@@ -41,6 +43,9 @@
   "WHO_CARRIED.awards.one": "one title",
   "WHO_CARRIED.awards.team_count": "{0} titles, one winner each",
   "WHO_CARRIED.awards.wait": "The game hands out its badges when the run ends.",
+  "WHO_CARRIED.copy.copying": "Copying...",
+  "WHO_CARRIED.copy.done": "Copied. Paste it anywhere with {0}",
+  "WHO_CARRIED.copy.failed": "Couldn't copy the image. Try {0} instead.",
   "WHO_CARRIED.debuffs.applied": "Applied to enemies",
   "WHO_CARRIED.debuffs.bonus_sentence": "Teammates dealt +{0} extra damage because of it.",
   "WHO_CARRIED.debuffs.cost": "What enemy debuffs cost you",

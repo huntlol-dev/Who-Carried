@@ -26,6 +26,15 @@ public static class HewnStoneArt
             Face: new Rgba(0x16, 0x23, 0x2F, 0xFF),
             FaceLit: new Rgba(0x24, 0x36, 0x47, 0xFF),
             FaceShade: new Rgba(0x0C, 0x14, 0x1D, 0xFF));
+
+        /// <summary>Iron: the same face with a grey rim, for the stone beside the main action (Export as image).</summary>
+        public static readonly Palette Plain = new(
+            Rim: new Rgba(0x6F, 0x7C, 0x8C, 0xFF),
+            RimLit: new Rgba(0xA9, 0xB4, 0xC2, 0xFF),
+            RimShade: new Rgba(0x3A, 0x43, 0x4F, 0xFF),
+            Face: Default.Face,
+            FaceLit: Default.FaceLit,
+            FaceShade: Default.FaceShade);
     }
 
     public readonly record struct Result(byte[] Pixels, int Width, int Height, int Margin);

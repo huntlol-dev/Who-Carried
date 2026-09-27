@@ -14,39 +14,35 @@ internal static class HewnStone
     /// <summary>The slab's height in design pixels: centred on the tab band, resting on HandLayout.TabLine.</summary>
     public const float SlabHeight = 42;
 
-    private static ImageTexture? _texture;
-    private static bool _drawn;
+    private static readonly Dictionary<HewnStoneArt.Palette, ImageTexture?> Stones = new();
 
-    /// <summary>The stone, drawn once. Null if it couldn't be built — callers fall back to a plain box.</summary>
-    public static ImageTexture? Texture
+    /// <summary>The stone in a palette, drawn once. Null if it couldn't be built — callers fall back to a plain box.</summary>
+    private static ImageTexture? Texture(HewnStoneArt.Palette palette)
     {
-        get
+        // The game disposes textures it unloads; a dead handle has to be redrawn like GameArt re-looks-up its own.
+        if (Stones.TryGetValue(palette, out ImageTexture? stone) && (stone == null || GodotObject.IsInstanceValid(stone))) return stone;
+        try
         {
-            // The game disposes textures it unloads; a dead handle has to be redrawn like GameArt re-looks-up its own.
-            if (_drawn && (_texture == null || GodotObject.IsInstanceValid(_texture))) return _texture;
-            _drawn = true;
-            try
-            {
-                _texture = HewnStoneArt.Draw(HewnStoneArt.Palette.Default) is HewnStoneArt.Result tile
-                    ? ImageTexture.CreateFromImage(Image.CreateFromData(tile.Width, tile.Height, false, Image.Format.Rgba8, tile.Pixels))
-                    : null;
-            }
-            catch (Exception e)
-            {
-                _texture = null;
-                Tracker.LogError("drawing the button stone (a plain box instead)", e);
-            }
-            return _texture;
+            stone = HewnStoneArt.Draw(palette) is HewnStoneArt.Result tile
+                ? ImageTexture.CreateFromImage(Image.CreateFromData(tile.Width, tile.Height, false, Image.Format.Rgba8, tile.Pixels))
+                : null;
         }
+        catch (Exception e)
+        {
+            stone = null;
+            Tracker.LogError("drawing the button stone (a plain box instead)", e);
+        }
+        Stones[palette] = stone;
+        return stone;
     }
 
     /// <summary>
     /// The stone as a style box. TextureMargin is in texture pixels and must not be scaled — that is the whole point
     /// of a nine-slice, and dropping it is what made the old buttons stretch. ContentMargin is on screen, so it is.
     /// </summary>
-    private static StyleBox Box(Kit k, Color tint)
+    private static StyleBox Box(Kit k, Color tint, HewnStoneArt.Palette palette)
     {
-        if (Texture is Texture2D stone)
+        if (Texture(palette) is Texture2D stone)
             return new StyleBoxTexture
             {
                 Texture = stone,
@@ -60,12 +56,17 @@ internal static class HewnStone
                 ContentMarginTop = k.U(6),
                 ContentMarginBottom = k.U(8),
             };
-        return RecapTheme.Box(RecapTheme.Table, k.U(4), RecapTheme.Gold, k.U(2), k.U(18), k.U(7));
+        Color edge = palette == HewnStoneArt.Palette.Default ? RecapTheme.Gold : RecapTheme.Muted;
+        return RecapTheme.Box(RecapTheme.Table, k.U(4), edge, k.U(2), k.U(18), k.U(7));
     }
 
-    /// <summary>The panel's one real button: a stone that lights on hover and sinks when pressed.</summary>
-    public static Button Slab(Kit k, string text, float height)
+    /// <summary>
+    /// The panel's real buttons: a stone that lights on hover and sinks when pressed. Bronze for the main action (Copy
+    /// to clipboard), <see cref="HewnStoneArt.Palette.Plain"/> for the one beside it.
+    /// </summary>
+    public static Button Slab(Kit k, string text, float height, HewnStoneArt.Palette? palette = null)
     {
+        HewnStoneArt.Palette stone = palette ?? HewnStoneArt.Palette.Default;
         var button = new Button
         {
             Text = text,
@@ -87,10 +88,10 @@ internal static class HewnStone
         button.AddThemeColorOverride("font_hover_color", new Color("fff7e6"));
         button.AddThemeColorOverride("font_pressed_color", RecapTheme.Muted);
         button.AddThemeColorOverride("font_hover_pressed_color", RecapTheme.Text);
-        button.AddThemeStyleboxOverride("normal", Box(k, new Color(1, 1, 1)));
-        button.AddThemeStyleboxOverride("hover", Box(k, new Color(1.12f, 1.12f, 1.12f)));
-        button.AddThemeStyleboxOverride("pressed", Box(k, new Color(0.78f, 0.78f, 0.78f)));
-        button.AddThemeStyleboxOverride("hover_pressed", Box(k, new Color(0.9f, 0.9f, 0.9f)));
+        button.AddThemeStyleboxOverride("normal", Box(k, new Color(1, 1, 1), stone));
+        button.AddThemeStyleboxOverride("hover", Box(k, new Color(1.12f, 1.12f, 1.12f), stone));
+        button.AddThemeStyleboxOverride("pressed", Box(k, new Color(0.78f, 0.78f, 0.78f), stone));
+        button.AddThemeStyleboxOverride("hover_pressed", Box(k, new Color(0.9f, 0.9f, 0.9f), stone));
         button.AddThemeStyleboxOverride("focus", new StyleBoxEmpty());
         button.Size = new Vector2(button.GetCombinedMinimumSize().X, k.U(height));
         return button;
@@ -109,7 +110,7 @@ internal static class HewnStone
             CustomMinimumSize = control.Size,
             MouseFilter = Control.MouseFilterEnum.Ignore,
         };
-        shadow.AddThemeStyleboxOverride("panel", Box(k, new Color(0.08f, 0.1f, 0.13f, 0.75f)));
+        shadow.AddThemeStyleboxOverride("panel", Box(k, new Color(0.08f, 0.1f, 0.13f, 0.75f), HewnStoneArt.Palette.Default));
         // The stone can be re-fitted after it is built — a controller glyph widens it — and a shadow left at the old
         // width would show its edge. Follow.
         control.Resized += () =>
@@ -123,13 +124,15 @@ internal static class HewnStone
 
     /// <summary>
     /// Hover lifts the stone off its shadow, press drops it into it. The shadow stays where it is — that is what makes
-    /// the movement read as the stone moving rather than the whole control sliding.
+    /// the movement read as the stone moving rather than the whole control sliding. <paramref name="rest"/> is where the
+    /// stone lies, for a stone that's moved after this (one that follows its neighbour); by default, where it is now.
     /// </summary>
-    public static void Lift(Button button, Kit k)
+    public static void Lift(Button button, Kit k, Func<Vector2>? rest = null)
     {
-        Vector2 rest = button.Position;
+        Vector2 now = button.Position;
+        rest ??= () => now;
         bool down = false;
-        void Place(float y) => button.Position = rest + k.V(0, y);
+        void Place(float y) => button.Position = rest() + k.V(0, y);
         button.MouseEntered += () => Place(down ? 2 : -2);
         button.MouseExited += () => { down = false; Place(0); };
         button.ButtonDown += () => { down = true; Place(2); };
