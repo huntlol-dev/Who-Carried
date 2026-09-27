@@ -510,7 +510,7 @@ internal static class DevPreview
                     image.Dispose();
                 }
                 then();
-            });
+            }, logAs: "preview share");
         }
         catch (Exception e)
         {

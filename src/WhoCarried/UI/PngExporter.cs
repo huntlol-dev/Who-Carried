@@ -42,7 +42,8 @@ internal static class PngExporter
     }
 
     /// <param name="onDone">Called with the image, or null and an error message.</param>
-    public static void Render(Control content, int width, Action<Image?, string?> onDone)
+    /// <param name="logAs">What a failed render is logged as: the export's by default, or the copy's or the preview's.</param>
+    public static void Render(Control content, int width, Action<Image?, string?> onDone, string logAs = "export")
     {
         var viewport = new SubViewport
         {
@@ -78,7 +79,7 @@ internal static class PngExporter
             {
                 combined?.Dispose();
                 combined = null;
-                Tracker.LogError("export", e);
+                Tracker.LogError(logAs, e);
                 viewport.QueueFree();
                 onDone(null, e.Message);
             }

@@ -277,7 +277,7 @@ internal static class RecapUi
                         if (copiedVersion == _copiedVersion && GodotObject.IsInstanceValid(handle.Root)) handle.ShowCopied(false);
                     });
                 });
-            });
+            }, logAs: "copy");
         }
         catch (Exception e)
         {
