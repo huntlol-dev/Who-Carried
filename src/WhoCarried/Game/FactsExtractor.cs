@@ -26,11 +26,18 @@ internal static class FactsExtractor
             // Only used when there's no card and nothing on the stack: poison ticks, and things firing on their own.
             Fallback: dealer == null ? PoisonFallback(target) : dealer.Player != null ? SelfFire.Recent(dealer.Player.NetId) : null,
             // A dealer already says whose hit it is; what was running only fills in for hits without one.
-            Effect: dealer == null && effect != null ? Safe(() => Candidate(effect)) : null);
+            Effect: dealer == null && effect != null ? Safe(() => Candidate(effect)) : null,
+            TargetHpInfinite: HpInfinite(target));
 
     /// <summary>Player creature → its player; pet → its owner; anything else → null.</summary>
     public static ulong? PlayerIdOf(Creature? creature) => creature?.Player?.NetId ?? creature?.PetOwner?.NetId;
 
+    /// <summary>The game's infinite health display marks a phase whose HP does not count.</summary>
+    public static bool HpInfinite(Creature creature)
+    {
+        try { return creature.HpDisplay.IsInfinite(); }
+        catch (Exception) { return false; }
+    }
     public static SourceCandidate Candidate(AbstractModel model)
     {
         string id = model.Id.Entry;

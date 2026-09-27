@@ -121,6 +121,14 @@ internal static class Tracker
         DebuffBonusTracker.PendingHit? boosted = DebuffBonusTracker.Take(target);
         // A mod's armour between block and HP: protection this hit spent, counted as block on either side.
         (int absorbed, IReadOnlyList<string> layers) = AbsorbLayers.Take(target);
+        if (!Attribution.Counts(facts))
+        {
+            // Clear the pending boost and armour above before skipping all attacking-side credit.
+            AttributionResult hitter = Attribution.Resolve(facts);
+            _log?.Write($"{Where} " + LogReplay.NotCountedLine(NameOf(hitter.PlayerId), hitter.Source, facts.HpRemoved,
+                facts.Blocked + absorbed, Describe(target)));
+            return;
+        }
         if (absorbed > 0)
             _log?.Write($"{Where} armour on {Describe(target)} ate {absorbed} hp" +
                         (layers.Count > 0 ? $" ({string.Join(", ", layers)})" : ""));
@@ -206,7 +214,7 @@ internal static class Tracker
 
         if (target.IsEnemy && FactsExtractor.PlayerIdOf(dealer) is ulong attacker)
         {
-            if (amount <= 0m) return;
+            if (amount <= 0m || FactsExtractor.HpInfinite(target)) return;
             foreach (DebuffBonusTracker.Amplifier weak in DebuffBonusTracker.DamageMultipliers(dealer, target, amount, props, dealer, cardSource, m => m > 0m && m < 1m))
             {
                 int lost = (int)(amount / weak.Multiplier) - (int)amount;
@@ -410,7 +418,7 @@ internal static class Tracker
     {
         foreach (Creature creature in creatures)
         {
-            if (creature == null || !creature.IsEnemy) continue;
+            if (creature == null || !creature.IsEnemy || FactsExtractor.HpInfinite(creature)) continue;
             int hp = creature.CurrentHp;
             if (hp <= 0) continue;
             DoomPower? doom = creature.GetPower<DoomPower>();
@@ -454,7 +462,7 @@ internal static class Tracker
             PowerModel? own = effect is PowerModel power ? creature.Powers.FirstOrDefault(p => p.GetType() == power.GetType()) : null;
             SourceCandidate? source = effect != null ? FactsExtractor.Candidate(own ?? effect) : null;
             var kill = new EffectCredit.Kill(effect != null, creature.IsEnemy, creature.IsAlive, creature.CurrentHp,
-                countedAsDoom, source?.OwnerId);
+                countedAsDoom, source?.OwnerId, FactsExtractor.HpInfinite(creature));
             IReadOnlyDictionary<ulong, int>? credits =
                 EffectCredit.ForKill(kill, own != null ? hp => DebuffBonusTracker.ShareKill(own, hp) : null);
             if (credits == null || source == null) continue;
