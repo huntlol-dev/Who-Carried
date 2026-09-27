@@ -236,10 +236,10 @@ internal static class Tracker
             DebuffBonusTracker.Amplifier weak = reducers[i];
             int prevented = kept[i];
             if (prevented <= 0) continue;
-            SourceRef debuff = DebuffRef(weak.Power);
-            foreach ((ulong player, int share) in DebuffBonusTracker.Share(weak.Power, prevented))
+            foreach ((PowerModel power, ulong player, int share) in PartShares(weak, prevented))
             {
                 if (share <= 0) continue;
+                SourceRef debuff = DebuffRef(power);
                 _stats.RecordDebuffPrevented(player, debuff, share);
                 _log?.Write($"{Where} {NameOf(player)} prevented {share} via {debuff.Id} ({debuff.Label}) | " +
                             $"{Describe(dealer)} hit {NameOf(victim)} for {amount} (x{weak.Multiplier}, block {block})");
@@ -389,10 +389,10 @@ internal static class Tracker
             DebuffBonusTracker.Amplifier amp = hit.Amplifiers[i];
             int bonus = bonuses[i];
             if (bonus <= 0) continue;
-            SourceRef debuff = DebuffRef(amp.Power);
-            foreach ((ulong player, int share) in DebuffBonusTracker.Share(amp.Power, bonus))
+            foreach ((PowerModel power, ulong player, int share) in PartShares(amp, bonus))
             {
                 if (share <= 0 || player == hitter) continue;
+                SourceRef debuff = DebuffRef(power);
                 _stats.RecordDebuffBonus(player, debuff, share);
                 _log?.Write($"{Where} {NameOf(player)} +{share} bonus via {debuff.Id} ({debuff.Label}) " +
                             $"on {NameOf(hitter)}'s hit (x{amp.Multiplier}, {facts.HpRemoved} hp)");
@@ -698,4 +698,24 @@ internal static class Tracker
 
     private static string StackIds(PlayerChoiceContext? context) =>
         string.Join(",", GameCompat.ModelStack(context).Select(m => m.Id.Entry));
+
+    /// <summary>
+    /// Shares <paramref name="hp"/> a debuff did on one hit between the parts of its multiplier: each part with a power
+    /// goes to that power's owners (Vulnerable's, Debilitate's), a part with none is the hitter's or victim's own and
+    /// goes to nobody. With no parts, all of it is the debuff's.
+    /// </summary>
+    private static IEnumerable<(PowerModel Power, ulong Player, int Share)> PartShares(DebuffBonusTracker.Amplifier amp, int hp)
+    {
+        if (amp.Parts == null)
+        {
+            foreach ((ulong player, int share) in DebuffBonusTracker.Share(amp.Power, hp)) yield return (amp.Power, player, share);
+            yield break;
+        }
+        int[] byPart = DebuffBonus.SplitIndexed(hp, amp.Parts.Select(p => p.Weight).ToList());
+        for (int i = 0; i < amp.Parts.Count; i++)
+        {
+            if (amp.Parts[i].Power is not PowerModel power || byPart[i] <= 0) continue;
+            foreach ((ulong player, int share) in DebuffBonusTracker.Share(power, byPart[i])) yield return (power, player, share);
+        }
+    }
 }

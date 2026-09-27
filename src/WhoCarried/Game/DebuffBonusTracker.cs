@@ -17,7 +17,8 @@ namespace WhoCarried.Game;
 /// </summary>
 internal static class DebuffBonusTracker
 {
-    public sealed record Amplifier(PowerModel Power, decimal Multiplier);
+    /// <param name="Parts">Who the multiplier's parts belong to (Debilitate, the hitter's relic…); null when it's all the debuff's.</param>
+    public sealed record Amplifier(PowerModel Power, decimal Multiplier, IReadOnlyList<(PowerModel? Power, decimal Weight)>? Parts = null);
 
     public sealed record PendingHit(decimal Amount, IReadOnlyList<Amplifier> Amplifiers);
 
@@ -39,7 +40,9 @@ internal static class DebuffBonusTracker
             decimal multiplier;
             try { multiplier = GameCompat.DamageMultiplicative(power, target, amount, props, dealer, cardSource); }
             catch (Exception) { continue; }
-            if (multiplier > 1m) (found ??= new List<Amplifier>()).Add(new Amplifier(power, multiplier));
+            if (multiplier > 1m)
+                (found ??= new List<Amplifier>()).Add(new Amplifier(power, multiplier,
+                    VanillaAmplifiers.Parts(power, target, amount, props, dealer, cardSource, multiplier)));
         }
         if (found != null) Fight.Now.BoostedHits[target] = new PendingHit(amount, found);
     }
@@ -63,7 +66,8 @@ internal static class DebuffBonusTracker
             decimal multiplier;
             try { multiplier = GameCompat.DamageMultiplicative(power, target, amount, props, dealer, cardSource); }
             catch (Exception) { continue; }
-            if (keep(multiplier)) found.Add(new Amplifier(power, multiplier));
+            if (keep(multiplier)) found.Add(new Amplifier(power, multiplier,
+                VanillaAmplifiers.Parts(power, target, amount, props, dealer, cardSource, multiplier)));
         }
         return found;
     }
