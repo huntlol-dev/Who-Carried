@@ -288,19 +288,21 @@ internal static class RecapUi
 
     /// <summary>
     /// Sets the status line and bumps its version, so a stale clear — or a stale write racing in behind a newer one —
-    /// can never stomp a message that came after it.
+    /// can never stomp a message that came after it. A panel that has closed is left alone, version and all: a late
+    /// message for it (a copy that outlived it) mustn't cancel the clear of a panel opened since. Returns the new
+    /// version, or null when nothing was written.
     /// </summary>
-    private static int SetStatus(PanelHandle handle, string text)
+    private static int? SetStatus(PanelHandle handle, string text)
     {
-        int version = ++_statusVersion;
-        if (GodotObject.IsInstanceValid(handle.Status)) handle.Status.Text = text;
-        return version;
+        if (!GodotObject.IsInstanceValid(handle.Status)) return null;
+        handle.Status.Text = text;
+        return ++_statusVersion;
     }
 
     /// <summary>A message in the status line, cleared four seconds later — unless something newer has been said since.</summary>
     private static void Say(PanelHandle handle, string text)
     {
-        int version = SetStatus(handle, text);
+        if (SetStatus(handle, text) is not int version) return; // nothing was written, so there's nothing to clear
         Later.Run(4.0, () =>
         {
             if (version == _statusVersion && GodotObject.IsInstanceValid(handle.Status)) handle.Status.Text = "";
