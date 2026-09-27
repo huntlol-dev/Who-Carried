@@ -18,6 +18,9 @@ internal static class DevPreview
 {
     private static readonly string[] TabNames = { "scoreboard", "awards", "sources", "debuffs", "support", "timeline", "defense", "decks" };
 
+    /// <summary>A Steam name near the 32-character limit, for the copy check: it must trim beside the gold.</summary>
+    private const string LongName = "Ashenvale_the_Unyielding_1987";
+
     public static void StartIfFlagged(string dataDir)
     {
         if (!File.Exists(Path.Combine(dataDir, "preview.flag"))) return;
@@ -63,7 +66,8 @@ internal static class DevPreview
             characters = all.Take(int.TryParse(wanted, out int count) ? Math.Clamp(count, 1, 4) : 4).ToArray();
         }
         if (characters.Length == 0) characters = all.Take(4).ToArray();
-        Sample sample = BuildSample(characters);
+        // The copy check's first player has a long name, to see it trimmed beside their gold.
+        Sample sample = BuildSample(characters, wanted == "copy" ? LongName : null);
         string? creationCase = options.FirstOrDefault(o => o.StartsWith("creation-", StringComparison.Ordinal));
         if (creationCase != null)
         {
@@ -87,6 +91,11 @@ internal static class DevPreview
         if (wanted == "steam")
         {
             CheckSteam(dataDir, sample);
+            return;
+        }
+        if (wanted == "copy")
+        {
+            CheckCopy(dataDir, sample);
             return;
         }
         // The game's canvas for this display setup (the aspect ratio setting picks the content size and how it fits).
@@ -512,6 +521,41 @@ internal static class DevPreview
         }
     }
 
+    /// <summary>
+    /// "copy" in the flag: the Copy to clipboard picture for a sample whose first player has a long name, saved as
+    /// preview-copy-share.png (and a mid-run one as preview-share-midrun.png), then put on the clipboard and read back.
+    /// The log names the clipboard's formats and the size Godot reads back. Overwrites the clipboard.
+    /// </summary>
+    private static void CheckCopy(string dataDir, Sample sample)
+    {
+        SaveShare(dataDir, "preview-share-midrun.png", sample.View with { Victory = null }, sample.Icons, () =>
+            PngExporter.Render(ShareCard.Create(sample.View, sample.Icons), ShareCard.PixelWidth, (image, error) =>
+            {
+                if (image == null)
+                {
+                    Tracker.Note($"preview copy: render failed: {error}");
+                    Tracker.Note("preview done");
+                    return;
+                }
+                PngExporter.SavePng(image, Path.Combine(dataDir, "preview-copy-share.png"));
+                ImageClipboard.Copy(image, (copyError, bytes) =>
+                {
+                    Tracker.Note($"preview copy: {copyError ?? "copied"}, {image.GetWidth()}×{image.GetHeight()}, {bytes} bytes");
+                    image.Dispose();
+                    ReadBack();
+                    Tracker.Note("preview done");
+                });
+            }));
+    }
+
+    /// <summary>What's on the clipboard now: its formats (on Windows), and the size of the picture Godot reads from it.</summary>
+    private static void ReadBack()
+    {
+        Tracker.Note($"preview copy: formats {ImageClipboard.Describe()}");
+        using Image? back = DisplayServer.ClipboardHasImage() ? DisplayServer.ClipboardGetImage() : null;
+        Tracker.Note($"preview copy: read back {(back == null ? "nothing" : $"{back.GetWidth()}×{back.GetHeight()}")}");
+    }
+
     /// <summary>Moves a virtual mouse over the chart so the screenshot shows the hover readout.</summary>
     private static void SimulateHover(Node tabs)
     {
@@ -544,9 +588,9 @@ internal static class DevPreview
         return new SourceRef(SourceKind.Power, id, label);
     }
 
-    private static Sample BuildSample(CharacterModel[] characters)
+    private static Sample BuildSample(CharacterModel[] characters, string? firstName = null)
     {
-        string[] names = { "Ash", "Mika", "Sam", "Jo", "Wren" };
+        string[] names = { firstName ?? "Ash", "Mika", "Sam", "Jo", "Wren" };
         var players = new List<PlayerInfo>();
         var deckModels = new Dictionary<ulong, List<CardModel>>();
         for (int i = 0; i < characters.Length; i++)
