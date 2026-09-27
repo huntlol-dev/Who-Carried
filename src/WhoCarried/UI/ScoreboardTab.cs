@@ -311,8 +311,9 @@ internal static class ScoreboardTab
             Label? earned = null;
             if (gold)
             {
-                // The name gives way to the gold: it trims with "…" before the two can touch.
-                var name = (Label)who.GetChild(who.GetChildCount() - 1);
+                // The name gives way to the gold: it trims with "…" before the two can touch. It's found as Who's label,
+                // not by its place in the row, so something added to Who can't break every copy.
+                Label name = who.GetChildren().OfType<Label>().Last();
                 name.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
                 name.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
                 name.CustomMinimumSize = k.V(24, 0);
