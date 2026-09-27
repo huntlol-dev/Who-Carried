@@ -8,7 +8,7 @@ The Workshop workspace lives **outside this repo**, in a sibling folder beside i
 
 ## Next release: three features waiting
 
-Specced and planned on 2026-09-27, held back from the release that shipped the HP cut, the
+Specced and planned on 2026-09-27, held back from the release with the HP cut, the
 vanilla attribution fixes and infinite-HP phases. Each branch holds only its spec and plan, which
 are already on `main`, so git lists them as merged: **don't delete them**. Start each one by
 fast-forwarding it to `main`, implement it, then merge it the same way.
