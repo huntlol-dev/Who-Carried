@@ -10,6 +10,8 @@
 
 **Spec:** [Vanilla attribution fixes](../specs/2026-09-27-vanilla-attribution-fixes-design.md).
 
+> **Implementation correction:** Real Harmony validation found that v0.107.1 has `LoseBlock(Creature creature, decimal amount)`, while v0.111.0 has the four arguments used below. The implemented prefix accepts both forms; the public-version fallback credits only a caller matching a live effect or card context. It also mirrors the command's combat-ending guard and integer rounding of remaining block. See the updated spec. Checked by installing the real prefix with Harmony against the v0.107.1 DLLs (the old four-argument prefix fails there with `Parameter "choiceContext" not found`); the beta DLL can't run outside the game, and a prefix taking `__args` binds to any argument list.
+
 ## Global constraints
 
 - Branch `bug/vanilla-attribution` from `main`. Commit after each task. Don't push. When done, squash-merge into `main` as one commit, subject `Fix vanilla credit for Debilitate, hit caps and Expose`.

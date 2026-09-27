@@ -281,13 +281,19 @@ internal static class TopBarNavigationPatch
     }
 }
 
-/// <summary>Block taken off without a hit (Expose). Read before it goes, so the enemy's block is still there to measure.</summary>
+/// <summary>Block removed without a hit: the beta adds context and remover to the public game's two arguments.</summary>
 [HarmonyPatch(typeof(CreatureCmd), nameof(CreatureCmd.LoseBlock))]
 internal static class LoseBlockPatch
 {
-    private static void Prefix(PlayerChoiceContext choiceContext, Creature target, decimal amount, Creature? remover)
+    private static void Prefix(object?[] __args)
     {
-        try { Tracker.OnBlockStripped(choiceContext, target, amount, remover); }
+        try
+        {
+            if (__args.Length == 4 && __args[1] is Creature target && __args[2] is decimal amount)
+                Tracker.OnBlockStripped(__args[0] as PlayerChoiceContext, target, amount, __args[3] as Creature);
+            else if (__args.Length == 2 && __args[0] is Creature creature && __args[1] is decimal legacyAmount)
+                Tracker.OnLegacyBlockStripped(creature, legacyAmount);
+        }
         catch (Exception e) { Tracker.LogError("LoseBlock", e); }
     }
 }

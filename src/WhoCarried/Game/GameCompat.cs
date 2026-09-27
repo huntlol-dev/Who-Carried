@@ -73,6 +73,10 @@ internal static class GameCompat
     /// <summary>The player whose action is running (a card played, a potion used); null if none.</summary>
     public static ulong? RunningActionOwner() => RunManager.Instance?.ActionExecutor?.CurrentlyRunningAction?.OwnerId;
 
+    /// <summary>The live context of the card action, for older commands that did not receive it.</summary>
+    public static PlayerChoiceContext? RunningCardContext() =>
+        (RunManager.Instance?.ActionExecutor?.CurrentlyRunningAction as PlayCardAction)?.PlayerChoiceContext;
+
     /// <summary>The id of the card or potion the running action is playing or using; null if there's none, or it's neither.</summary>
     public static string? RunningActionSource() => RunManager.Instance?.ActionExecutor?.CurrentlyRunningAction switch
     {

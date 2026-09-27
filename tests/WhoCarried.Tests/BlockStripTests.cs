@@ -27,4 +27,23 @@ public static class BlockStripTests
         Check.Equal(14, moth.BlockRemoved, "block removed");
         Check.Equal(0, moth.DamageDealt, "no damage");
     }
+    [Test]
+    public static void FractionalRemovalMatchesTheBlockActuallyLost()
+    {
+        Check.Equal(1, BlockStrip.Removed(0.5m, 10), "game truncates the remaining block to 9");
+        Check.Equal(4, BlockStrip.Removed(3.2m, 10), "6.8 remaining becomes 6");
+    }
+
+    [Test]
+    public static void LegacyCreditRequiresTheCallingContentToMatchALiveSource()
+    {
+        var card = new SourceCandidate(new(SourceKind.Card, "EXPOSE", "Expose"), 11);
+        var relic = new SourceCandidate(new(SourceKind.Relic, "TEST", "Test relic"), 22);
+        var enemy = new SourceCandidate(new(SourceKind.Power, "BURROWED_POWER", "Burrowed"), null);
+        Check.Equal(card, BlockStrip.LegacySource(card.Source, null, card), "direct card call");
+        Check.Equal(relic, BlockStrip.LegacySource(relic.Source, relic, card), "known turn effect");
+        Check.True(BlockStrip.LegacySource(enemy.Source, null, card) == null, "enemy call during another player's card");
+        Check.Equal(enemy, BlockStrip.LegacySource(enemy.Source, enemy, card), "known enemy effect remains ownerless");
+        Check.True(BlockStrip.LegacySource(null, relic, card) == null, "no proven caller");
+    }
 }

@@ -43,7 +43,7 @@ internal static class SelfFire
     }
 
     /// <summary>The nearest game content (an orb, a mod's rune…) up the call stack, as its official copy.</summary>
-    private static AbstractModel? Caller()
+    internal static AbstractModel? Caller()
     {
         foreach (StackFrame frame in new StackTrace(2, false).GetFrames())
         {

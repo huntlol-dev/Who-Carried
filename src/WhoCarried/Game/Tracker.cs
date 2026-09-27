@@ -719,17 +719,35 @@ internal static class Tracker
         }
     }
 
+    /// <summary>A block strip with a remover explicitly named by the game. A missing or enemy remover gets no credit.</summary>
+    public static void OnBlockStripped(PlayerChoiceContext? context, Creature target, decimal amount, Creature? remover) =>
+        RecordBlockStrip(context, target, amount,
+            new SourceCandidate(FactsExtractor.StackTop(context)?.Source ?? SourceRef.Unknown, FactsExtractor.PlayerIdOf(remover)), remover);
+
     /// <summary>
-    /// A player stripping an enemy's block without hitting it (Expose): counted as block knocked off, under whatever
-    /// started it. Enemies stripping their own block name no player and aren't counted.
+    /// The public game's command has no remover/context. Match the nearest calling content to a live turn effect or
+    /// card context; an unrelated enemy effect during a player's action must not borrow that player's credit.
     /// </summary>
-    public static void OnBlockStripped(PlayerChoiceContext? context, Creature target, decimal amount, Creature? remover)
+    public static void OnLegacyBlockStripped(Creature target, decimal amount)
     {
-        if (!target.IsEnemy || target.IsDead || FactsExtractor.HpInfinite(target) || FactsExtractor.PlayerIdOf(remover) is not ulong player) return;
+        if (!target.IsEnemy || target.Block <= 0 || amount <= 0m) return;
+        AbstractModel? caller = SelfFire.Caller();
+        if (caller == null) return;
+        PlayerChoiceContext? context = GameCompat.RunningCardContext();
+        SourceCandidate? effect = EffectSources.Running is AbstractModel running ? FactsExtractor.Candidate(running) : null;
+        SourceCandidate? card = context?.LastInvolvedModel is CardModel playing ? FactsExtractor.Candidate(playing) : null;
+        SourceCandidate? source = BlockStrip.LegacySource(FactsExtractor.Candidate(caller).Source, effect, card);
+        RecordBlockStrip(context, target, amount, source, null);
+    }
+
+    private static void RecordBlockStrip(PlayerChoiceContext? context, Creature target, decimal amount, SourceCandidate? source,
+                                          Creature? remover)
+    {
+        if (CombatManager.Instance.IsOverOrEnding || !target.IsEnemy || target.IsDead || FactsExtractor.HpInfinite(target) ||
+            source?.OwnerId is not ulong player) return;
         int removed = BlockStrip.Removed(amount, target.Block);
         if (removed <= 0) return;
-        SourceRef source = FactsExtractor.StackTop(context)?.Source ?? SourceRef.Unknown;
-        RecordHit(player, source, 0, removed, target, remover, context);
+        RecordHit(player, source.Source, 0, removed, target, remover, context);
         Touch();
     }
 }

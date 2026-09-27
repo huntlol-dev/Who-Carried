@@ -66,7 +66,7 @@ Expose removes all of an enemy's block through `CreatureCmd.LoseBlock`, not thro
 
 ### Decision
 
-**Block a player strips from an enemy without damage counts as block knocked off**, credited to the player named as the remover and listed under the card or effect on top of the action's model stack (Expose). Only the block the enemy actually had counts. The game's `remover` argument says who did it, so this names no card. Enemies stripping their own block (Burrowed) name no player and aren't counted. Nothing is counted on an enemy showing infinite HP.
+**Block a player strips from an enemy without damage counts as block knocked off**, credited to the player named as the remover and listed under the card or effect on top of the action's model stack (Expose). Only the block the enemy actually had counts. On the beta, the game's `remover` argument says who did it, so this names no card. The public version has no remover or context argument: credit requires the nearest calling content to match a live turn effect or the current card's context. An unproven caller gets no credit. Enemies stripping their own block (Burrowed) aren't attributed to an unrelated player's action. Nothing is counted on an enemy showing infinite HP, or while combat is over or ending. The amount follows the game's rounding of the block remaining.
 
 It's logged as an ordinary hit line with 0 HP, so replays read it:
 
