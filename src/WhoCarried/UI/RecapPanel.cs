@@ -62,6 +62,10 @@ internal static class RecapPanel
         // "Copied", in green, while the status line says how to paste; then the label again.
         void ShowCopied(bool copied)
         {
+            // Hold the width the slab has now before its word changes: a substitute font (Chinese) can widen the label
+            // after HoldWidth's first measure, and the shorter "Copied" would drop the slab back to that narrower hold,
+            // moving Export as image left while it shows.
+            copy.CustomMinimumSize = new Vector2(Math.Max(copy.CustomMinimumSize.X, copy.Size.X), copy.CustomMinimumSize.Y);
             copy.Text = Loc.Text(copied ? "WHO_CARRIED.action.copied" : "WHO_CARRIED.action.copy_image");
             copy.AddThemeColorOverride("font_color", copied ? RecapTheme.Green : copyIdle);
             copy.AddThemeColorOverride("font_hover_color", copied ? RecapTheme.Green : copyHover);
