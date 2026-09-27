@@ -550,7 +550,7 @@ internal static class DevPreview
                         // The failure message, as a failed copy shows it: the longest thing the status line says, and
                         // the one a working clipboard never shows. Laid out, it must read whole, clear of the bar's
                         // other words.
-                        handle.Status.Text = Loc.Text("WHO_CARRIED.copy.failed", Loc.Text("WHO_CARRIED.action.save_image"));
+                        handle.Status.Text = RecapUi.CopyFailedMessage();
                         Later.Run(0.3, () =>
                         {
                             root.GetTexture().GetImage().SavePng(Path.Combine(dataDir, "preview-copy-failed.png"));

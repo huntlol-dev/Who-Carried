@@ -228,6 +228,13 @@ internal static class RecapUi
     }
 
     /// <summary>
+    /// What the status line says when a copy fails: try Export as image instead, the button named as it reads on the
+    /// button. The name is kept on one line, so the message wraps before it rather than inside it.
+    /// </summary>
+    internal static string CopyFailedMessage() =>
+        Loc.Text("WHO_CARRIED.copy.failed", LineBreaks.KeepTogether(Loc.Text("WHO_CARRIED.action.save_image")));
+
+    /// <summary>
     /// Copy to clipboard: renders the picture players paste into Discord (<see cref="ShareCard"/>) and puts it on the
     /// clipboard. A click while a copy is under way is ignored. The recap may close before it's done; nothing here then
     /// touches it, and the next copy still works.
@@ -245,7 +252,7 @@ internal static class RecapUi
         {
             _copying = false;
             Tracker.Note($"copy failed: {reason}");
-            Say(handle, Loc.Text("WHO_CARRIED.copy.failed", Loc.Text("WHO_CARRIED.action.save_image")));
+            Say(handle, CopyFailedMessage());
         }
         try
         {
