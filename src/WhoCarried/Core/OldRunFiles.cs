@@ -32,8 +32,10 @@ public static class OldRunFiles
             // Together when they're the same run: the folder is named from the stats, which carry the latest key.
             if (statsKey.Length > 0 && logKey.Length > 0 && RunFolders.Seed(statsKey) == RunFolders.Seed(logKey))
                 logKey = statsKey;
-            if (statsKey.Length > 0) MoveOne(statsPath, statsKey, RunFolders.StatsFile, RunFolders.LogFile, File.Exists(logPath));
-            if (logKey.Length > 0) MoveOne(logPath, logKey, RunFolders.LogFile, RunFolders.StatsFile, File.Exists(statsPath));
+            // Both looked at before either moves: the log mustn't take its stats file's move for the partner being gone.
+            bool statsInRoot = File.Exists(statsPath), logInRoot = File.Exists(logPath);
+            if (statsKey.Length > 0) MoveOne(statsPath, statsKey, RunFolders.StatsFile, RunFolders.LogFile, logInRoot);
+            if (logKey.Length > 0) MoveOne(logPath, logKey, RunFolders.LogFile, RunFolders.StatsFile, statsInRoot);
         }
         return (moved, error);
 

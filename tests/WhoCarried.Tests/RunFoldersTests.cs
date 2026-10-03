@@ -167,6 +167,26 @@ public static class RunFoldersTests
         Check.Equal(0, new RunFolders(root).Prune(RunFolders.Keep, active: null), "below the limit");
     }
 
+    // LastPlayed only reads timestamps, which Windows hands out even for a held file, so the dating is swapped for one that throws.
+    [Test]
+    public static void PruneKeepsAFolderItCantDate()
+    {
+        string root = NewRoot();
+        string unknown = MakeRun(root, "2026-09-01_1000_UNKNOWN", new DateTime(2026, 9, 1, 0, 0, 0, DateTimeKind.Utc));
+        MakeRun(root, "2026-09-02_1000_B", new DateTime(2026, 9, 2, 0, 0, 0, DateTimeKind.Utc));
+        MakeRun(root, "2026-09-03_1000_C", new DateTime(2026, 9, 3, 0, 0, 0, DateTimeKind.Utc));
+        var problems = new List<string>();
+        DateTime? Dating(string folder) =>
+            Path.GetFileName(folder).EndsWith("UNKNOWN") ? null : RunFolders.LastPlayed(folder);
+        int deleted = new RunFolders(root).Prune(1, active: null, problems.Add, Dating);
+        Check.Equal(1, deleted, "only the older dated one goes: the undated folder isn't counted towards keep");
+        Check.True(Directory.Exists(unknown), "the folder it can't date is kept");
+        Check.True(Directory.Exists(Path.Combine(root, "2026-09-03_1000_C")), "newest kept");
+        Check.True(!Directory.Exists(Path.Combine(root, "2026-09-02_1000_B")), "oldest dated gone");
+        Check.Equal(1, problems.Count, "reported once");
+        Check.True(problems[0].StartsWith("2026-09-01_1000_UNKNOWN: "), "names the folder");
+    }
+
     private static RunStats Stats(string key, int damage = 9, bool finished = false)
     {
         var s = new RunStats { RunKey = key, Finished = finished };
@@ -254,6 +274,16 @@ public static class RunFoldersTests
         File.WriteAllText(Path.Combine(folder, RunFolders.StatsFile), "{ not json");
         Check.True(runs.FindResumable("SEED:1789237698", loadedFromSave: true) == null, "corrupt stats");
         Check.True(new RunFolders(NewRoot()).FindResumable("SEED:1", loadedFromSave: true) == null, "no runs folder");
+    }
+
+    [Test]
+    public static void ResumeSkipsStatsWithANullRunKey()
+    {
+        var runs = new RunFolders(NewRoot());
+        string folder = runs.Create("SEED:1789237698", DateTime.Now);
+        File.WriteAllText(Path.Combine(folder, RunFolders.StatsFile), "{\"RunKey\": null}");
+        Check.True(runs.FindResumable("SEED:1789237698", loadedFromSave: true) == null, "damaged stats");
+        Check.True(runs.FindResumable("SEED:1789237698", loadedFromSave: false) == null, "damaged stats, not from a save");
     }
 
     // The players' report: a co-op run, a singleplayer run started in between, then back to co-op.

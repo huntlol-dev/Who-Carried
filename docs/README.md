@@ -17,7 +17,7 @@ The specs and plans the mod was built from, in the order they were written (Sept
 **Three later changes the docs don't show:**
 - The mod's files (`current_run.dat`, `events.log`, the dev preview and replay flags and their screenshots) moved from `<game>\mods\WhoCarried\data\` to a `WhoCarried` folder in the game's save folder: `%APPDATA%\SlayTheSpire2\WhoCarried` on Windows, `~/.local/share/SlayTheSpire2/WhoCarried` on Linux, `~/Library/Application Support/SlayTheSpire2/WhoCarried` on a Mac. The mod moves an old `data` folder over on its first start.
 - **Save image** puts the card in the player's Steam screenshots instead of `Pictures\Who Carried`.
-- Each run has its own folder in `runs\` (`stats.dat`, `events.log`, `run.json`) instead of the single `current_run.dat` and `events.log`, and lines written outside a run go to `mod.log`. See [keeping every run](design/specs/2026-10-03-multiple-runs-design.md).
+- Each run has its own folder in `runs\` (`stats.dat`, `events.log`, `run.json`) instead of the single `current_run.dat` and `events.log`, and lines written before a run starts go to `mod.log`. See [keeping every run](design/specs/2026-10-03-multiple-runs-design.md).
 
 They were written with Claude Code, which is why they mention Claude building, deploying and reading the logs.
 

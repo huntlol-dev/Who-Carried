@@ -91,6 +91,7 @@ internal static class Tracker
         _run = run;
         string key = GameReader.RunKey(run);
         bool loaded = _origin.TakeLoadedFromSave(GameReader.ReloadCount());
+        _log = _modLog; // until the run's folder is chosen, so a failure to make it lands in mod.log, not the last run's log
         RunFolders.Resumable? resumed = _runs.FindResumable(key, loaded);
         if (resumed != null)
         {
@@ -104,10 +105,11 @@ internal static class Tracker
             catch (Exception e)
             {
                 _runDir = null;
-                LogError("making the run's folder", e); // goes to mod.log (or the last run's log): counting carries on in memory
+                LogError("making the run's folder", e); // counting carries on in memory
             }
         }
         _log = _runDir != null ? new EventLog(Path.Combine(_runDir, RunFolders.LogFile)) : _modLog;
+        Save(); // a run left before its first fight ends still has a stats.dat to resume from
         _log?.Write(resumed == null
             ? LogReplay.HeaderLine(ModEntry.Version, key, DateTime.Now)
             : LogReplay.ResumedLine(key, _stats.Fights.Count));

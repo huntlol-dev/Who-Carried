@@ -118,6 +118,7 @@ internal static class Replay
         catch (Exception e)
         {
             Tracker.LogError("replay", e);
+            Tracker.Note("replay done");
             RecapUi.Hide();
         }
     }

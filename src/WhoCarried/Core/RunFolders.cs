@@ -86,12 +86,21 @@ public sealed class RunFolders(string root)
 
     /// <summary>
     /// Deletes the least recently played runs until <paramref name="keep"/> are left. Never deletes
-    /// <paramref name="active"/>, which counts towards the ones kept. A folder that can't be deleted is reported and skipped.
+    /// <paramref name="active"/>, which counts towards the ones kept. A folder that can't be deleted is reported and skipped;
+    /// so is one whose last-played time can't be read (it might be the newest), and it doesn't count towards <paramref name="keep"/>.
     /// </summary>
     /// <returns>How many folders were deleted.</returns>
-    public int Prune(int keep, string? active, Action<string>? onError = null)
+    public int Prune(int keep, string? active, Action<string>? onError = null) => Prune(keep, active, onError, TryLastPlayed);
+
+    internal int Prune(int keep, string? active, Action<string>? onError, Func<string, DateTime?> lastPlayed)
     {
-        List<string> folders = RunFoldersOrEmpty().OrderByDescending(SafeLastPlayed).ToList();
+        var dated = new List<(string Folder, DateTime Played)>();
+        foreach (string folder in RunFoldersOrEmpty())
+        {
+            if (lastPlayed(folder) is DateTime played) dated.Add((folder, played));
+            else onError?.Invoke($"{Path.GetFileName(folder)}: can't tell when it was last played, kept");
+        }
+        List<string> folders = dated.OrderByDescending(d => d.Played).Select(d => d.Folder).ToList();
         bool IsActive(string folder) =>
             active != null && string.Equals(Path.GetFullPath(folder), Path.GetFullPath(active), StringComparison.OrdinalIgnoreCase);
         // The active run takes one of the places first, wherever it sorts.
@@ -137,8 +146,8 @@ public sealed class RunFolders(string root)
             candidates.Add((folder, stats, SafeLastPlayed(folder)));
         }
         var ordered = candidates.OrderByDescending(c => c.Played).ToList();
-        var pick = ordered.FirstOrDefault(c => c.Stats.RunKey == runKey);
-        if (pick.Folder == null && loadedFromSave) pick = ordered.FirstOrDefault(c => Seed(c.Stats.RunKey) == seed);
+        var pick = ordered.FirstOrDefault(c => (c.Stats.RunKey ?? "") == runKey);
+        if (pick.Folder == null && loadedFromSave) pick = ordered.FirstOrDefault(c => Seed(c.Stats.RunKey ?? "") == seed);
         if (pick.Folder == null) return null;
         pick.Stats.RunKey = runKey;
         return new Resumable(pick.Folder, pick.Stats);
@@ -169,10 +178,12 @@ public sealed class RunFolders(string root)
         }
     }
 
-    internal static DateTime SafeLastPlayed(string folder)
+    internal static DateTime SafeLastPlayed(string folder) => TryLastPlayed(folder) ?? DateTime.MinValue;
+
+    private static DateTime? TryLastPlayed(string folder)
     {
         try { return LastPlayed(folder); }
-        catch (Exception) { return DateTime.MinValue; }
+        catch (Exception) { return null; }
     }
 
     private static string SafeSeed(string seed)
