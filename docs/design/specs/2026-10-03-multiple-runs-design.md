@@ -182,14 +182,35 @@ The player's own block comes from that folder's `stats.dat`. Today it's only use
 - `RunInfoTests`: `run.json` round-trips; missing fields read as `"unknown"`; a file that can't be read doesn't throw.
 - `EventLogTests`: `mod.log` starts fresh each launch and keeps `mod.previous.log`.
 
-**In the game**, after checking the owner isn't playing:
+### Manual test cases
 
-1. **Back up first.** The first launch of the new build moves the owner's real `current_run.dat` and `events.log`. Before deploying, copy the whole `WhoCarried` folder to a dated backup, and check afterwards that the runs of the 27th and 29th are in `runs\` intact.
-2. Start a run; check its folder, `run.json` and the `mods:` line.
-3. `replay.flag` empty, then naming a folder, then naming one that doesn't exist.
-4. `mod.log` has the start-up lines.
+The owner plays on the dev machine: check they aren't playing before deploying or launching (`tasklist` for `SlayTheSpire2.exe`), and ask if the game is running and we didn't start it.
 
-**Optional, needs a second player:** the co-op guest case. Join a co-op run as a guest, let the host leave and host it again, rejoin. Afterwards there should be **one** folder for that run in `runs\`, not two. The rule is today's and the unit tests cover it.
+**Can be done alone:**
+
+| # | Steps | Expected |
+|---|---|---|
+| M1 | **Back up first.** Copy the whole `%APPDATA%\SlayTheSpire2\WhoCarried` folder to a dated backup *before* deploying. Deploy, launch to the main menu. | `current_run.dat`, `events.log`, `current_run.previous.dat`, `events.previous.log` are gone from the root and sit in `runs\2026-09-27_…_TB20BJ6WUGJ2\` and `runs\2026-09-29_…_CEKDYSK8A9AB\` (the 29th's guest log and stats in one folder despite their different start times). Files byte-identical to the backup. `events.prev.log`, settings, flags and screenshots untouched. `mod.log` exists with the start-up lines. |
+| M2 | Close and relaunch. | `mod.log` is fresh; the last launch's is `mod.previous.log`. Nothing else moves. |
+| M3 | Start a new singleplayer run, play one fight. | A new folder named with today's time and the seed, holding `stats.dat`, `events.log` (header, player lines, a `mods:` line) and `run.json` (build, language, profile, local player, mods with versions, players with name/character/colour). |
+| M4 | **The players' case, solo.** Profile 1: start a run, play a fight, Save & Quit. Switch to profile 2: start a run, play a fight, Save & Quit. Back to profile 1: Continue, play a fight. | Two folders. Profile 1's run carries on in its first folder: a "resumed" line, a second `mods:` line, `run.json` rewritten, fight counts from both sessions. Profile 2's folder untouched. |
+| M5 | Save & Quit mid-run, close the game, relaunch, Continue. | Same folder, "resumed" line, no new folder. |
+| M6 | Finish a run (win or lose). | The game-over recap counts the whole run, including sessions before any switching. `stats.dat` says finished. |
+| M7 | Start a new run after M6. | A new folder; the finished one isn't reused. |
+| M8 | Mid-run, Save & Quit, turn a non-gameplay mod off (or on), relaunch, Continue. | If the game loads the save: same folder, a new `mods:` line showing the change, `run.json`'s mod list updated. If the game refuses the save: nothing to resume, the folder stays unfinished. |
+| M9 | `replay.flag` empty. | Replays the most recently played run. |
+| M10 | `replay.flag` holding an older folder's name (e.g. the 29th's). | Replays that run, guest block included. |
+| M11 | `replay.flag` holding a name that doesn't exist. | `mod.log` says so; nothing replays. |
+| M12 | Pruning (optional): make 100 dummy folders with old file dates, start a run. | The least recently played folder goes; the new run's folder stays. |
+
+**Needs a second player (optional, the unit tests cover the rules):**
+
+| # | Steps | Expected |
+|---|---|---|
+| M13 | **The original report.** Host or join a co-op run, play a fight, leave. Start a singleplayer run, play a fight. Go back to the co-op run and finish it. | Co-op's recap includes its first part. One co-op folder, one singleplayer folder. |
+| M14 | **Guest re-host.** Join a co-op run as a guest, play a fight; the host leaves and hosts it again; rejoin. | **One** folder for that run, not two, even though the run key's start time changed. |
+
+Not tested by hand: a folder that can't be created or written (permissions, full disk), unreadable `stats.dat`, the migration meeting an existing folder. The unit tests cover those.
 
 ## Out of scope
 
