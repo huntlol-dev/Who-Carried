@@ -1207,7 +1207,7 @@ In `src/WhoCarried/Core/EventLog.cs`:
 - On `PreviousPath`: `/// <summary>The last launch's log, kept when <see cref="Reset"/> starts a new one ("mod.previous.log" for "mod.log").</summary>`
 - On `Reset`: `/// <summary>Starts a fresh log (mod.log, at each launch); the last one is kept as <see cref="PreviousPath"/>. Run logs are never reset.</summary>`
 
-- [ ] **Step 4: Add `GameReader.RunInfo`**
+- [ ] **Step 4: Add `GameReader.ReadRunInfo`**
 
 In `src/WhoCarried/Game/GameReader.cs`, add these usings (beside the existing ones, in order):
 
