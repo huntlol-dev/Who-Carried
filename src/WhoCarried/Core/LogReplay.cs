@@ -57,6 +57,17 @@ public static class LogReplay
     public static string ResumedLine(string runKey, int fightsRestored) =>
         $"--- resumed run {runKey}: {fightsRestored} fights restored ---";
 
+    /// <summary>The run a log belongs to: the key of its last header or "resumed" line, or "" if it has neither.</summary>
+    public static string RunKeyOf(IEnumerable<string> lines)
+    {
+        string runKey = "";
+        Match m;
+        foreach (string line in lines)
+            if ((m = Header.Match(line)).Success || (m = Resumed.Match(line)).Success)
+                runKey = m.Groups[1].Value;
+        return runKey;
+    }
+
     /// <summary>A skipped infinite-HP hit, logged without the damage marker so replay ignores it.</summary>
     public static string NotCountedLine(string who, SourceRef source, int hp, int blocked, string target) =>
         $"{who} not counted {hp} hp from {source.Kind}:{source.Id} ({source.Label}) | target {target}, blocked {blocked}, infinite HP";

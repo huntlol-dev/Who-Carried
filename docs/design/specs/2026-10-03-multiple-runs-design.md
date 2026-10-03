@@ -112,13 +112,13 @@ Once a run starts, lines go to that run's `events.log`, including lines written 
 
 `RunFolders.MoveOldFiles(dataDir)` runs in `Tracker.Init`, before `mod.log` is opened:
 
-1. If `current_run.dat` isn't in the root, it does nothing. On every launch after the first, that's all it costs: one file check.
+1. If none of the four old files is in the root, it does nothing. On every launch after the first, that's all it costs: four file checks.
 2. Otherwise it moves two pairs, each into the folder of its run:
    - `current_run.dat` with `events.log`
    - `current_run.previous.dat` with `events.previous.log`
 3. Each file's run comes from inside it: `RunKey` in the stats, the header line in the log (`LogReplay.HeaderLine`), or a later "resumed" line if there is one. A stats file and a log go in the same folder when their seeds match (a guest's log header and stats can have different start times). A file without its partner gets a folder on its own; a file whose run can't be read stays where it is.
 4. The folder's name comes from the stats' run key (the log's, for a log on its own): its start time and seed.
-5. **Nothing is ever overwritten.** If the folder already exists, the files stay in the root and a line goes to `mod.log`. That only happens if someone goes back to an older Who Carried mid-run, which in practice means local builds.
+5. **Nothing is ever overwritten.** A file already in the run's folder stays, and the root file stays where it is too; `mod.log` says so. That only happens if someone goes back to an older Who Carried mid-run, which in practice means local builds. A folder that's already there is fine, so a move that failed half-way finishes next launch.
 6. Moves are renames on the same drive, so a file is never in two places or in none. If one fails, the others are still tried, and whatever is left is tried again next launch.
 7. It never throws, like `DataFolderMove`.
 
