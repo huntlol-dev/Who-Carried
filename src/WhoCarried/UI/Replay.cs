@@ -7,10 +7,11 @@ using WhoCarried.Localization;
 namespace WhoCarried.UI;
 
 /// <summary>
-/// Rebuilds the recap of the run recorded in events.log (the most recent one) with today's rules, if replay.flag
-/// exists; both are in the mod's data folder (<see cref="Tracker.DataDir"/>). Decks, damage taken, healing, end-of-floor
-/// HP and badges come from the game's own saved run; the player's own block from current_run.dat. Opens it in the full
-/// recap, screenshots each view and the exported image into the data folder, then closes. Inert otherwise.
+/// Rebuilds the recap of a recorded run with today's rules, if replay.flag exists in the mod's data folder
+/// (<see cref="Tracker.DataDir"/>): the run played most recently, or the run whose folder name (in runs\) the flag holds.
+/// Decks, damage taken, healing, end-of-floor HP and badges come from the game's own saved run; the player's own block
+/// from the run's stats.dat. Opens it in the full recap, screenshots each view and the exported image into the data
+/// folder, then closes. Inert otherwise.
 /// </summary>
 internal static class Replay
 {
@@ -19,23 +20,38 @@ internal static class Replay
 
     public static void StartIfFlagged(string dataDir)
     {
-        if (!File.Exists(Path.Combine(dataDir, "replay.flag"))) return;
-        Later.Run(10, () => Run(dataDir));
+        string flag = Path.Combine(dataDir, "replay.flag");
+        if (!File.Exists(flag)) return;
+        string name = "";
+        try { name = File.ReadAllText(flag).Trim(); }
+        catch (Exception e) { Tracker.LogError("replay.flag", e); }
+        Later.Run(10, () => Run(dataDir, name));
     }
 
-    private static void Run(string dataDir)
+    private static void Run(string dataDir, string name)
     {
         try
         {
-            LogReplay.Result log = LogReplay.Parse(File.ReadAllLines(Path.Combine(dataDir, "events.log")), Title);
+            var runs = new RunFolders(Path.Combine(dataDir, "runs"));
+            string? folder = name.Length > 0 ? runs.Named(name) : runs.Newest();
+            if (folder == null)
+            {
+                // Never fall back to the newest run when one was named: that would quietly replay the wrong one.
+                Tracker.Note(name.Length > 0 ? $"replay: no run called {name} in {runs.Root}" : $"replay: no runs in {runs.Root}");
+                Tracker.Note("replay done");
+                return;
+            }
+            Tracker.Note($"replay: {Path.GetFileName(folder)}");
+            LogReplay.Result log = LogReplay.Parse(File.ReadAllLines(Path.Combine(folder, RunFolders.LogFile)), Title);
             string start = log.RunKey.Contains(':') ? log.RunKey[(log.RunKey.LastIndexOf(':') + 1)..] : "";
             string? historyPath = FindHistory(start);
             RunHistory? history = historyPath == null ? null : RunHistory.Parse(File.ReadAllText(historyPath));
             Tracker.Note($"replay: run {log.RunKey}, {log.Stats.Fights.Count} fights, history {historyPath ?? "not found"}");
 
-            // The player's own block isn't in the log; the saved stats of the same run have it.
-            RunStats? saved = RunStatsStore.Load(Path.Combine(dataDir, "current_run.dat"));
-            if (saved != null && saved.RunKey == log.RunKey)
+            // The player's own block isn't in the log; the run's saved stats have it. Same folder, same run, even
+            // when a guest's log and stats carry different start times.
+            RunStats? saved = RunStatsStore.Load(Path.Combine(folder, RunFolders.StatsFile));
+            if (saved != null)
                 foreach ((string key, PlayerTotals totals) in saved.Players)
                     if (log.Stats.Players.TryGetValue(key, out PlayerTotals? rebuilt)) rebuilt.Blocked = totals.Blocked;
 

@@ -539,7 +539,7 @@ internal static class DevPreview
                 {
                     PanelHandle handle = RecapUi.ShowView(sample.View, sample.Icons, new CardVisuals(sample.CardFor));
                     handle.Copy();
-                    handle.Copy(); // a double-click: events.log gains one copy line for the two
+                    handle.Copy(); // a double-click: mod.log gains one copy line for the two
                     // A copy takes about half a second; "Copied" then shows for two, the status line for four.
                     Later.Run(1.5, () =>
                     {
