@@ -110,7 +110,7 @@ Once a run starts, lines go to that run's `events.log`, including lines written 
 
 ## Moving today's files
 
-`RunFolders.MoveOldFiles(dataDir)` runs in `Tracker.Init`, before `mod.log` is opened:
+`OldRunFiles.Move(dataDir, runs)` runs in `Tracker.Init`, before `mod.log` is opened:
 
 1. If none of the four old files is in the root, it does nothing. On every launch after the first, that's all it costs: four file checks.
 2. Otherwise it moves two pairs, each into the folder of its run:
@@ -119,7 +119,7 @@ Once a run starts, lines go to that run's `events.log`, including lines written 
 3. Each file's run comes from inside it: `RunKey` in the stats, the header line in the log (`LogReplay.HeaderLine`), or a later "resumed" line if there is one. A stats file and a log go in the same folder when their seeds match (a guest's log header and stats can have different start times). A file without its partner gets a folder on its own; a file whose run can't be read stays where it is.
 4. The folder's name comes from the stats' run key (the log's, for a log on its own): its start time and seed.
 5. **Nothing is ever overwritten.** A file already in the run's folder stays, and the root file stays where it is too; `mod.log` says so. That only happens if someone goes back to an older Who Carried mid-run, which in practice means local builds. A folder that's already there is fine, so a move that failed half-way finishes next launch.
-6. Moves are renames on the same drive, so a file is never in two places or in none. If one fails, the others are still tried, and whatever is left is tried again next launch.
+6. Moves are renames on the same drive, so a file is never in two places or in none. If one fails, the others are still tried, and whatever is left is tried again next launch. A file whose partner moved on an earlier launch (a log that was locked, say) joins the folder its partner went to, so a run's stats and log always end up together.
 7. It never throws, like `DataFolderMove`.
 
 Other leftovers (`events.prev.log` and the like) are left alone. The code can come out a few releases on, once nearly everyone has been through it.
@@ -139,7 +139,8 @@ The player's own block comes from that folder's `stats.dat`. Today it's only use
 ## Code
 
 **New**
-- `Core/RunFolders.cs`: the `runs\` folder. `Create`, `FindResumable`, `Prune`, `Newest`, `Named`, `MoveOldFiles`. Plain C# with no game types, so it can be tested against a temporary folder.
+- `Core/RunFolders.cs`: the `runs\` folder. `Create`, `FindResumable`, `Prune`, `Newest`, `Named`. Plain C# with no game types, so it can be tested against a temporary folder.
+- `Core/OldRunFiles.cs`: the one-time move of the old root files into `runs\`. Plain C#, tested against a temporary folder.
 - `Core/RunInfo.cs`: the `run.json` record, and saving and loading it (with `WhoCarriedJson`, like `RunStats`).
 
 **Changed**
@@ -177,7 +178,7 @@ The player's own block comes from that folder's `stats.dat`. Today it's only use
   - `FindResumable` matches the exact key; matches on seed only when loading from a save; skips finished runs, other seeds and unreadable stats; takes the most recently played of several.
   - `Prune` keeps 100, deletes the least recently played first, never the active run, and does nothing below 100.
   - `Newest` and `Named` pick the right folder; an unknown name gives nothing.
-  - `MoveOldFiles` moves both pairs into folders named from their own keys, pairs a guest's log and stats with different start times, never overwrites an existing folder, leaves a file it can't read, retries what's left, and does nothing when `current_run.dat` isn't there.
+  - `OldRunFiles.Move` moves both pairs into folders named from their own keys, pairs a guest's log and stats with different start times, never overwrites an existing file, leaves a file it can't read, retries what's left, does nothing when none of the four old files is there, and a file left behind by a failed move joins its partner's folder on the next launch.
 - **The players' case as one test:** a co-op run starts and saves, a singleplayer run starts and saves, the co-op run is loaded again and finishes. Every co-op count is there, and the singleplayer folder is untouched.
 - `RunInfoTests`: `run.json` round-trips; missing fields read as `"unknown"`; a file that can't be read doesn't throw.
 - `EventLogTests`: `mod.log` starts fresh each launch and keeps `mod.previous.log`.

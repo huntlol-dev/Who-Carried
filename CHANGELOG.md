@@ -2,6 +2,12 @@
 
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format, [semver](https://semver.org/spec/v2.0.0.html) numbers.
 
+## [Unreleased]
+
+### Fixed
+
+- A run you leave and come back to keeps everything it counted, however many runs you play in between. Starting a singleplayer run in the middle of a co-op run used to wipe the co-op run's first part. Each run now has its own folder in `WhoCarried\runs\`, and the last 100 runs are kept. Your last two runs are moved there the first time the game starts with this version.
+
 ## [1.3.0] — 2026-09-27
 
 ### Added

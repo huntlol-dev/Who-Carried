@@ -105,7 +105,7 @@ game's saved language preference. Existing `m1`, `m2` and `steam` modes still wo
 
 After startup the preview captures seven tabs, the live update, the long image,
 top-bar tooltip and controller navigation. Wait for `preview done` in
-`events.log`. Copy the screenshots somewhere else between runs: filenames are
+`mod.log`. Copy the screenshots somewhere else between runs: filenames are
 reused. Delete `preview.flag` when finished.
 
 | View | Check in English and Simplified Chinese |

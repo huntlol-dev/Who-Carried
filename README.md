@@ -29,7 +29,7 @@ When a run ends, the recap opens over the victory or defeat screen and deals eve
 - **Controller** support: bumpers switch tabs, the d-pad moves around.
 - **Hotkey:** open the recap and click the key on the top bar — the one reading **F8 toggles the recap** — then press the key you want. Esc cancels; Delete or Backspace clears it, leaving the podium button. The setting is saved in `settings.json` in the mod's data folder.
 - **Experimental:** some modded effects deal damage with no dealer and no card (Hextech Runes' Burn), which shows as Unknown. `"experimentalEffectSources": true` in `settings.json` credits it to the effect that was running; restart the game after changing it.
-- **Files** live in the game's save folder under `WhoCarried/` (`%APPDATA%\SlayTheSpire2\WhoCarried` on Windows).
+- **Files** live in the game's save folder under `WhoCarried/` (`%APPDATA%\SlayTheSpire2\WhoCarried` on Windows). Each run has its own folder in `runs\`, named by when it started and its seed, holding its stats, its log (`events.log`) and `run.json` (the mods, game build and players it was played with). The last 100 runs are kept. Lines written outside a run go to `mod.log`, fresh each launch.
 - **Saves look gone?** They aren't deleted. The game keeps modded saves apart from vanilla ones, so progress seems to vanish the first time you play with any mod, not just this one. Vanilla saves are untouched and come back without mods. To bring them into your modded game, use [Import Vanilla Saves](https://steamcommunity.com/sharedfiles/filedetails/?id=3747503308).
 
 ### Steam Deck and Linux
@@ -65,7 +65,7 @@ To build against another game version's DLLs, pass `-p:GameData=<folder with sts
 Two files in the mod's data folder switch on developer tools at start-up:
 
 - `preview.flag` opens the recap with sample data about 10 s after the game loads, screenshots every view into the data folder, with the exported image and the Copy to clipboard picture (`preview-share.png`), then closes it. The file can hold a party size (`1`–`4`), or a comma-separated list of up to five character ids, like `IRONCLAD,IRONCLAD,REGENT`, to check players who share a character. Use `timer eng` or `timer zhs` to check that changing elapsed time leaves the recap's neighboring statistics in place; results are logged, with `preview-timer-normal.png` saved after ordinary ticks pass and `preview-timer.png` after the long-run and visibility checks pass. Use `copy` (or `copy zhs`) to check Copy to clipboard for real, on a sample whose first player has a long name. It saves the picture (`preview-copy-share.png`, and a mid-run one as `preview-share-midrun.png`), clicks the button with the recap closing straight after, then double-clicks it. It logs the clipboard's formats and the size read back from it, and saves `preview-copy.png` showing the button and status line, then `preview-copy-failed.png` with the failure message in the bar. It overwrites your clipboard.
-- `replay.flag` rebuilds the recap of the last recorded run from `events.log` with the current rules.
+- `replay.flag` rebuilds the recap of the run played most recently from its `events.log`, with the current rules. If the file holds a run's folder name (e.g. `2026-09-27_2140_TB20BJ6WUGJ2`), it rebuilds that run instead; a name that isn't there replays nothing and says so in `mod.log`.
 
 ## What's changed
 

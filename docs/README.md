@@ -14,9 +14,10 @@ The specs and plans the mod was built from, in the order they were written (Sept
 
 **The mod was called "Run Recap" when these were written.** It was renamed **Who Carried?** before release, because another Workshop mod already uses that name. Where the docs say `RunRecap`, the code now says `WhoCarried`: `src\RunRecap\` is `src\WhoCarried\`, `<game>\mods\RunRecap\` is `<game>\mods\WhoCarried\`, and so on. `<game>` is your Slay the Spire 2 folder.
 
-**Two later changes the docs don't show:**
+**Three later changes the docs don't show:**
 - The mod's files (`current_run.dat`, `events.log`, the dev preview and replay flags and their screenshots) moved from `<game>\mods\WhoCarried\data\` to a `WhoCarried` folder in the game's save folder: `%APPDATA%\SlayTheSpire2\WhoCarried` on Windows, `~/.local/share/SlayTheSpire2/WhoCarried` on Linux, `~/Library/Application Support/SlayTheSpire2/WhoCarried` on a Mac. The mod moves an old `data` folder over on its first start.
 - **Save image** puts the card in the player's Steam screenshots instead of `Pictures\Who Carried`.
+- Each run has its own folder in `runs\` (`stats.dat`, `events.log`, `run.json`) instead of the single `current_run.dat` and `events.log`, and lines written outside a run go to `mod.log`. See [keeping every run](design/specs/2026-10-03-multiple-runs-design.md).
 
 They were written with Claude Code, which is why they mention Claude building, deploying and reading the logs.
 
@@ -36,3 +37,4 @@ They were written with Claude Code, which is why they mention Claude building, d
 | [Telling apart players on the same character](design/specs/2026-09-23-same-character-colours-design.md) | [plan](design/plans/2026-09-23-same-character-colours.md) | Shades of a shared colour, gaps in the climb, names on the Timeline's lines, and the scoreboard's portraits zoomed out |
 | [Deaths and gold](design/specs/2026-09-26-deaths-and-gold-design.md) | [plan](design/plans/2026-09-26-deaths-and-gold.md) | A skull on the card's portrait counting deaths, and each player's gold earned in the Decks tab |
 | [Copy to clipboard](design/specs/2026-09-27-copy-to-clipboard-design.md) | [plan](design/plans/2026-09-27-copy-to-clipboard.md) | One click puts a landscape picture of the run on the clipboard, ready to paste into Discord |
+| [Keeping every run](design/specs/2026-10-03-multiple-runs-design.md) | [plan](design/plans/2026-10-03-multiple-runs.md) | A folder per run, so a run picked up again keeps everything; what each run was played with, for a later run history |
