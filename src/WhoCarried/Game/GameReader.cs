@@ -3,13 +3,16 @@ using System.Text.RegularExpressions;
 using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Combat;
+using MegaCrit.Sts2.Core.Debug;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Map;
+using MegaCrit.Sts2.Core.Modding;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Platform;
 using MegaCrit.Sts2.Core.Runs;
+using MegaCrit.Sts2.Core.Saves;
 using WhoCarried.Core;
 using WhoCarried.Localization;
 
@@ -289,6 +292,60 @@ internal static class GameReader
             // fall back to seed only
         }
         return $"{run.Rng.StringSeed}:{start}";
+    }
+
+    /// <summary>
+    /// What this run is being played with, for run.json. Every field is read on its own: whatever the game won't give
+    /// (a branch without the call, a mod without a version) is "unknown", and this never throws.
+    /// </summary>
+    public static RunInfo ReadRunInfo(IRunState run, string runKey, string modVersion)
+    {
+        return new RunInfo
+        {
+            RunKey = runKey,
+            WhoCarried = modVersion,
+            GameBuild = Safe(() => ReleaseInfoManager.Instance.ReleaseInfo?.Version ?? ReleaseInfoManager.Instance.SemVer?.ToString()),
+            Language = Safe(() => LocManager.Instance?.Language),
+            LocalPlayer = Safe(() => PlatformUtil.GetLocalPlayerId(PlatformType.Steam).ToString(CultureInfo.InvariantCulture)),
+            Profile = Safe(() => SaveManager.Instance.CurrentProfileId.ToString(CultureInfo.InvariantCulture)),
+            Mods = LoadedMods(),
+            Players = SafeList(() => Players(run).Select(p => new RunInfo.PlayerEntry
+            {
+                Id = p.NetId.ToString(CultureInfo.InvariantCulture),
+                Name = p.Name,
+                CharacterId = p.CharacterId,
+                CharacterName = p.Character,
+                Colour = p.ColorHex,
+            }).ToList()),
+            Written = DateTime.Now.ToString("s", CultureInfo.InvariantCulture),
+        };
+    }
+
+    /// <summary>Every loaded mod, by its manifest's id and version (the folder name when it has no manifest).</summary>
+    private static List<RunInfo.ModVersion> LoadedMods() =>
+        SafeList(() => ModManager.GetLoadedMods().Select(m => new RunInfo.ModVersion
+        {
+            Id = Safe(() => m.manifest?.id ?? Path.GetFileName(m.path)),
+            Version = Safe(() => m.manifest?.version ?? m.version?.ToString()),
+        }).ToList());
+
+    private static string Safe(Func<string?> read)
+    {
+        try
+        {
+            string? value = read();
+            return string.IsNullOrWhiteSpace(value) ? RunInfo.Unknown : value;
+        }
+        catch (Exception)
+        {
+            return RunInfo.Unknown;
+        }
+    }
+
+    private static List<T> SafeList<T>(Func<List<T>> read)
+    {
+        try { return read(); }
+        catch (Exception) { return new List<T>(); }
     }
 
     /// <summary>The result chip next to the title: "Defeat on floor 37", "Victory on floor 49", "Act 2, floor 17".</summary>

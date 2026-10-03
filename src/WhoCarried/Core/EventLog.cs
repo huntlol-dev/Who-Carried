@@ -9,10 +9,10 @@ public sealed class EventLog
 
     public string FilePath { get; }
 
-    /// <summary>The previous run's log, kept when a new run starts ("events.previous.log").</summary>
+    /// <summary>The last launch's log, kept when <see cref="Reset"/> starts a new one ("mod.previous.log" for "mod.log").</summary>
     public string PreviousPath => Path.ChangeExtension(FilePath, ".previous" + Path.GetExtension(FilePath));
 
-    /// <summary>Starts a fresh log for a new run; the last run's log is kept as <see cref="PreviousPath"/>.</summary>
+    /// <summary>Starts a fresh log (mod.log, at each launch); the last one is kept as <see cref="PreviousPath"/>. Run logs are never reset.</summary>
     public void Reset(string header)
     {
         lock (_lock)

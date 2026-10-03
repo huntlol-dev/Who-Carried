@@ -138,7 +138,7 @@ public sealed class FightBucket
     public Dictionary<string, int> DamageByPlayer { get; set; } = new();
 }
 
-/// <summary>Everything the mod has counted for one run. Serialized as-is to current_run.dat.</summary>
+/// <summary>Everything the mod has counted for one run. Serialized as-is to its run folder's stats.dat.</summary>
 public sealed class RunStats
 {
     public const string UnattributedKey = "unattributed";

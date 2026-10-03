@@ -18,4 +18,17 @@ public static class EventLogTests
         Check.Equal("header 2", lines[0], "header");
         Check.Equal("line b", lines[1], "line");
     }
+
+    [Test]
+    public static void ResetKeepsTheLastLogAsPrevious()
+    {
+        string path = Path.Combine(Path.GetTempPath(), "whocarried-tests", Guid.NewGuid().ToString("N"), "mod.log");
+        var log = new EventLog(path);
+        log.Reset("launch 1");
+        log.Write("line a");
+        log.Reset("launch 2");
+        Check.Equal(Path.ChangeExtension(path, ".previous.log"), log.PreviousPath, "mod.previous.log");
+        Check.Equal("line a", File.ReadAllLines(log.PreviousPath)[1], "last launch kept");
+        Check.Equal("launch 2", File.ReadAllLines(path)[0], "this launch fresh");
+    }
 }

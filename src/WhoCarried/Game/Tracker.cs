@@ -21,7 +21,10 @@ internal static class Tracker
     private static RunStats _stats = new();
     private static readonly RunOrigin _origin = new();
     private static IRunState? _run;
-    private static EventLog? _log;
+    private static EventLog? _log;      // where lines go now: mod.log until a run starts, then that run's events.log
+    private static EventLog? _modLog;
+    private static RunFolders _runs = new("");
+    private static string? _runDir;     // the run's folder; null before the first run, or if it couldn't be made
     private static string _dataDir = "";
     private static Dictionary<ulong, string> _names = new();
 
@@ -40,11 +43,11 @@ internal static class Tracker
 
     public static string DataDir => _dataDir;
 
-    /// <summary>Appends a free-form line to events.log (exports, preview status).</summary>
+    /// <summary>Appends a free-form line to the log: the run's events.log, or mod.log before a run starts.</summary>
     public static void Note(string line) => _log?.Write(line);
 
-    // Not ".json": it used to live under mods/, where the game's mod loader reads every .json as a manifest.
-    private static string StatsPath => Path.Combine(_dataDir, "current_run.dat");
+    /// <summary>The run's stats.dat; null when there's no run folder (counting carries on in memory).</summary>
+    private static string? StatsPath => _runDir == null ? null : Path.Combine(_runDir, RunFolders.StatsFile);
 
     private static string Where => _run == null ? "[--]" : $"[F{_run.TotalFloor} A{_run.CurrentActIndex + 1}]";
 
@@ -52,7 +55,7 @@ internal static class Tracker
     /// The mod's files live in the game's own save folder (user://: %APPDATA%\SlayTheSpire2 on Windows,
     /// ~/.local/share/SlayTheSpire2 on Linux, ~/Library/Application Support/SlayTheSpire2 on a Mac), not beside the DLL:
     /// Steam replaces a Workshop mod's folder when it updates, and on a Mac the mods folder is inside the game's app.
-    /// Files an older version left in data/ beside the DLL are moved over.
+    /// Files an older version left in data/ beside the DLL are moved over, and the single run older versions kept is moved into runs\.
     /// </summary>
     public static void Init(string modDir)
     {
@@ -61,9 +64,18 @@ internal static class Tracker
         (int moved, string? error) = DataFolderMove.Run(oldDir, _dataDir);
         try { Directory.CreateDirectory(_dataDir); }
         catch (Exception e) { Log.Error($"[WhoCarried] can't make {_dataDir}: {e.Message}"); }
-        _log = new EventLog(Path.Combine(_dataDir, "events.log"));
-        if (moved > 0) _log.Write($"moved {moved} files here from {oldDir}");
+        _runs = new RunFolders(Path.Combine(_dataDir, "runs"));
+        (int runFiles, string? runError) = OldRunFiles.Move(_dataDir, _runs);
+
+        _modLog = new EventLog(Path.Combine(_dataDir, "mod.log"));
+        string started = DateTime.Now.ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture);
+        try { _modLog.Reset($"Who Carried v{ModEntry.Version} - game started {started}"); }
+        catch (Exception e) { Log.Warn($"[WhoCarried] can't start mod.log: {e.Message}"); }
+        _log = _modLog;
+        if (moved > 0) _modLog.Write($"moved {moved} files here from {oldDir}");
         if (error != null) Log.Warn($"[WhoCarried] moving files from {oldDir}: {error}");
+        if (runFiles > 0) _modLog.Write($"moved {runFiles} run files into {_runs.Root}");
+        if (runError != null) _modLog.Write($"moving run files into {_runs.Root}: {runError}");
     }
 
     /// <summary>The game is setting up a run: a new one, or one <paramref name="saved"/> from a save.</summary>
@@ -79,25 +91,45 @@ internal static class Tracker
         _run = run;
         string key = GameReader.RunKey(run);
         bool loaded = _origin.TakeLoadedFromSave(GameReader.ReloadCount());
-        RunStats? resumed = RunStatsStore.LoadIfResumable(StatsPath, key, loaded);
-        _stats = resumed ?? new RunStats { RunKey = key };
-        if (resumed == null)
+        RunFolders.Resumable? resumed = _runs.FindResumable(key, loaded);
+        if (resumed != null)
         {
-            // The last run's stats and log are kept beside the new ones (".previous"), in case it's wanted later.
-            try
-            {
-                if (File.Exists(StatsPath)) File.Copy(StatsPath, Path.ChangeExtension(StatsPath, ".previous.dat"), overwrite: true);
-            }
-            catch (Exception e) { LogError("keep previous stats", e); }
-            _log?.Reset(LogReplay.HeaderLine(ModEntry.Version, key, DateTime.Now));
+            _stats = resumed.Stats;
+            _runDir = resumed.Folder;
         }
         else
-            _log?.Write(LogReplay.ResumedLine(key, _stats.Fights.Count));
+        {
+            _stats = new RunStats { RunKey = key };
+            try { _runDir = _runs.Create(key, DateTime.Now); }
+            catch (Exception e)
+            {
+                _runDir = null;
+                LogError("making the run's folder", e); // goes to mod.log (or the last run's log): counting carries on in memory
+            }
+        }
+        _log = _runDir != null ? new EventLog(Path.Combine(_runDir, RunFolders.LogFile)) : _modLog;
+        _log?.Write(resumed == null
+            ? LogReplay.HeaderLine(ModEntry.Version, key, DateTime.Now)
+            : LogReplay.ResumedLine(key, _stats.Fights.Count));
 
         IReadOnlyList<PlayerInfo> players = GameReader.Players(run);
         _names = players.ToDictionary(p => p.NetId, p => p.Name);
         foreach (PlayerInfo p in players)
             _log?.Write($"player {p.NetId} = {p.Name} ({p.Character}) #{p.ColorHex}");
+
+        WriteRunInfo(run, key);
+        int pruned = _runs.Prune(RunFolders.Keep, _runDir, problem => _log?.Write($"can't delete an old run: {problem}"));
+        if (pruned > 0) _log?.Write($"deleted {pruned} old runs, keeping the last {RunFolders.Keep}");
+    }
+
+    /// <summary>run.json, rewritten at each start and resume, and the "mods:" line in the log.</summary>
+    private static void WriteRunInfo(IRunState run, string key)
+    {
+        RunInfo info = GameReader.ReadRunInfo(run, key, ModEntry.Version);
+        _log?.Write(RunInfo.ModsLine(info.Mods));
+        if (_runDir == null) return;
+        try { RunInfo.Save(info, Path.Combine(_runDir, RunFolders.InfoFile)); }
+        catch (Exception e) { LogError("run.json", e); }
     }
 
     public static void OnCombatStart(IRunState run, ICombatState? combat)
@@ -677,7 +709,9 @@ internal static class Tracker
 
     private static void Save()
     {
-        try { RunStatsStore.Save(_stats, StatsPath); }
+        string? path = StatsPath;
+        if (path == null) return; // no run folder: the recap still works from memory
+        try { RunStatsStore.Save(_stats, path); }
         catch (Exception e) { LogError("save", e); }
     }
 
