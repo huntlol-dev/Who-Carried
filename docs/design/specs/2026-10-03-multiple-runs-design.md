@@ -20,7 +20,7 @@ The owner made these during brainstorming:
 
 - **Keep every run, finished or not, up to 100.** Past that, the run played least recently is deleted, finished or not. An unfinished run is only lost after 100 newer runs, so a run that's really paused never is in practice, and runs that will never finish (a guest whose host never comes back) don't pile up. About 250 KB a run, so about 25 MB at the cap.
 - **A folder per run**, under `runs\`. Once written, a run's files never move, so switching runs can't lose anything.
-- **Lines written outside a run go to `mod.log`**, started fresh each launch.
+- **Lines written before a run starts go to `mod.log`**, started fresh each launch.
 - **Today's files are moved into `runs\` on the first start of the new version**, the `.previous` pair included, so a run in progress when Steam updates the mod carries on.
 - **`replay.flag` rebuilds the newest run, or the run named in the flag.**
 - **Each run records the mods, game build, language and players it was played with (`run.json`), but no art.** See [Why no art](#why-no-art).
@@ -30,7 +30,7 @@ The owner made these during brainstorming:
 ```
 %APPDATA%\SlayTheSpire2\WhoCarried\
   settings.json                  unchanged
-  mod.log                        lines written outside a run, this launch
+  mod.log                        lines written before a run starts, this launch
   mod.previous.log               the same, last launch
   runs\
     2026-09-27_2140_TB20BJ6WUGJ2\
@@ -104,7 +104,7 @@ Saving the art was considered and turned down:
 
 ## The log outside a run
 
-`mod.log` takes every line written before the first run starts in a launch: the start-up notes (`effect sources: watching …`), errors in the main menu, and the preview's and replay's lines. Each launch starts it fresh and keeps the last one as `mod.previous.log`, the way `EventLog.Reset` keeps `.previous` today.
+`mod.log` takes every line written before the first run starts in a launch: errors in the main menu, and the preview's and replay's lines. Each launch starts it fresh and keeps the last one as `mod.previous.log`, the way `EventLog.Reset` keeps `.previous` today. The effect-source notes are written once the first run has started, so they go to that run's `events.log`.
 
 Once a run starts, lines go to that run's `events.log`, including lines written after it ends (the recap's Save image and Copy notes), until another run starts. Run logs are only ever added to.
 
