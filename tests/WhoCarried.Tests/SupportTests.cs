@@ -47,7 +47,7 @@ public static class SupportTests
         s.RecordSupport(1, 2, SupportKind.Block, 12);
         s.RecordSupport(1, 2, SupportKind.Draws, 2);
         RunStatsStore.Save(s, path);
-        PlayerTotals loaded = RunStatsStore.LoadIfResumable(path, "SEED:1")!.Get(1)!;
+        PlayerTotals loaded = RunStatsStore.Load(path)!.Get(1)!;
         Check.Equal(12, loaded.BlockGiven, "block");
         Check.Equal(2, loaded.CardsDrawnForTeam, "draws");
     }
@@ -59,7 +59,7 @@ public static class SupportTests
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         // What 1.1.0 wrote: no support fields at all.
         File.WriteAllText(path, "{ \"RunKey\": \"SEED:1\", \"Players\": { \"1\": { \"DamageDealt\": 9 } } }");
-        PlayerTotals loaded = RunStatsStore.LoadIfResumable(path, "SEED:1")!.Get(1)!;
+        PlayerTotals loaded = RunStatsStore.Load(path)!.Get(1)!;
         Check.Equal(9, loaded.DamageDealt, "old stats kept");
         Check.Equal(0, loaded.EnergyGiven + loaded.CardsGiven + loaded.BlockGiven + loaded.BuffsGiven + loaded.CardsDrawnForTeam,
             "support starts at nothing");

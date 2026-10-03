@@ -53,7 +53,7 @@ public static class LogReplay
     public static string HeaderLine(string version, string runKey, DateTime started) =>
         $"Who Carried v{version} - run {runKey} started {started.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)}";
 
-    /// <summary>Written when a saved run is picked up again. Its key wins over the header's: see <see cref="RunStatsStore.LoadIfResumable"/>.</summary>
+    /// <summary>Written when a saved run is picked up again. Its key wins over the header's: see <see cref="RunFolders.FindResumable"/>.</summary>
     public static string ResumedLine(string runKey, int fightsRestored) =>
         $"--- resumed run {runKey}: {fightsRestored} fights restored ---";
 

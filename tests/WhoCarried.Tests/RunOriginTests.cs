@@ -4,8 +4,7 @@ namespace WhoCarried.Tests;
 
 public static class RunOriginTests
 {
-    private static string TempFile() =>
-        Path.Combine(Path.GetTempPath(), "whocarried-tests", Guid.NewGuid().ToString("N"), "current_run.dat");
+    private static string NewRoot() => Path.Combine(Path.GetTempPath(), "whocarried-tests", Guid.NewGuid().ToString("N"), "runs");
 
     [Test]
     public static void ASavedRunCountsAsLoadedEvenAtReloadCountZero()
@@ -22,16 +21,16 @@ public static class RunOriginTests
     [Test]
     public static void AGuestsFirstReloadOnThePublicBranchResumes()
     {
-        string path = TempFile();
+        var runs = new RunFolders(NewRoot());
         var stats = new RunStats { RunKey = "SEED:1789580126" };
         stats.BeginFight(1, 2, "Cultist");
         stats.RecordDamage(1, new SourceRef(SourceKind.Card, "STRIKE", "Strike"), 6);
         stats.EndFight();
-        RunStatsStore.Save(stats, path);
+        RunStatsStore.Save(stats, Path.Combine(runs.Create(stats.RunKey, DateTime.Now), RunFolders.StatsFile));
 
         var origin = new RunOrigin();
         origin.SetUpSaved();
-        RunStats? resumed = RunStatsStore.LoadIfResumable(path, "SEED:1789580128", origin.TakeLoadedFromSave(numReloads: 0));
+        RunStats? resumed = runs.FindResumable("SEED:1789580128", origin.TakeLoadedFromSave(numReloads: 0))?.Stats;
 
         Check.True(resumed != null, "resumed");
         Check.Equal(1, resumed!.Fights.Count, "fights kept");

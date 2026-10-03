@@ -117,6 +117,33 @@ public sealed class RunFolders(string root)
         return deleted;
     }
 
+    /// <summary>An unfinished run to carry on with: its folder, and its stats already given the run's current key.</summary>
+    public sealed record Resumable(string Folder, RunStats Stats);
+
+    /// <summary>
+    /// The unfinished run the game is starting again, or null. Only folders named for this run's seed are opened. A
+    /// folder whose stats have exactly <paramref name="runKey"/> wins; when the game is loading a saved run, the seed
+    /// alone is enough: a co-op guest's new run is stamped with the guest's clock, but the save it loads later carries
+    /// the host's. Of several, the one played most recently. Never throws.
+    /// </summary>
+    public Resumable? FindResumable(string runKey, bool loadedFromSave)
+    {
+        string seed = Seed(runKey);
+        var candidates = new List<(string Folder, RunStats Stats, DateTime Played)>();
+        foreach (string folder in FoldersFor(seed))
+        {
+            RunStats? stats = RunStatsStore.Load(Path.Combine(folder, StatsFile));
+            if (stats == null || stats.Finished) continue;
+            candidates.Add((folder, stats, SafeLastPlayed(folder)));
+        }
+        var ordered = candidates.OrderByDescending(c => c.Played).ToList();
+        var pick = ordered.FirstOrDefault(c => c.Stats.RunKey == runKey);
+        if (pick.Folder == null && loadedFromSave) pick = ordered.FirstOrDefault(c => Seed(c.Stats.RunKey) == seed);
+        if (pick.Folder == null) return null;
+        pick.Stats.RunKey = runKey;
+        return new Resumable(pick.Folder, pick.Stats);
+    }
+
     /// <summary>The run folders for this seed: "…_SEED" and "…_SEED-2" and so on.</summary>
     internal IEnumerable<string> FoldersFor(string seed)
     {

@@ -166,4 +166,122 @@ public static class RunFoldersTests
         MakeRun(root, "2026-09-02_1000_B", DateTime.UtcNow);
         Check.Equal(0, new RunFolders(root).Prune(RunFolders.Keep, active: null), "below the limit");
     }
+
+    private static RunStats Stats(string key, int damage = 9, bool finished = false)
+    {
+        var s = new RunStats { RunKey = key, Finished = finished };
+        s.BeginFight(1, 2, "Cultist");
+        s.RecordDamage(1, new SourceRef(SourceKind.Power, "POISON_POWER", "Poison"), damage);
+        s.EndFight();
+        return s;
+    }
+
+    /// <summary>Saves <paramref name="stats"/> into a new folder for its key, last played at <paramref name="playedUtc"/>.</summary>
+    private static string SaveRun(RunFolders runs, RunStats stats, DateTime playedUtc)
+    {
+        string folder = runs.Create(stats.RunKey, DateTime.Now);
+        string path = Path.Combine(folder, RunFolders.StatsFile);
+        RunStatsStore.Save(stats, path);
+        File.SetLastWriteTimeUtc(path, playedUtc);
+        return folder;
+    }
+
+    [Test]
+    public static void ResumesTheExactRunKey()
+    {
+        var runs = new RunFolders(NewRoot());
+        string folder = SaveRun(runs, Stats("SEED:1789237698"), DateTime.UtcNow);
+        RunFolders.Resumable? found = runs.FindResumable("SEED:1789237698", loadedFromSave: false);
+        Check.True(found != null, "found");
+        Check.Equal(folder, found!.Folder, "folder");
+        Check.Equal(9, found.Stats.Get(1)!.DamageDealt, "stats");
+    }
+
+    [Test]
+    public static void OtherSeedsAndFinishedRunsAreNotResumed()
+    {
+        var runs = new RunFolders(NewRoot());
+        SaveRun(runs, Stats("OTHER:1789237698"), DateTime.UtcNow);
+        SaveRun(runs, Stats("SEED:1789237698", finished: true), DateTime.UtcNow);
+        Check.True(runs.FindResumable("SEED:1789237698", loadedFromSave: true) == null, "nothing to resume");
+    }
+
+    // In co-op a guest's new run is stamped with the guest's clock, but a loaded save carries the host's, so the
+    // same run comes back with a different start time.
+    [Test]
+    public static void LoadedSaveResumesTheSameSeedDespiteANewStartTime()
+    {
+        var runs = new RunFolders(NewRoot());
+        string folder = SaveRun(runs, Stats("SEED:1789237698"), DateTime.UtcNow);
+        RunFolders.Resumable? found = runs.FindResumable("SEED:1789237700", loadedFromSave: true);
+        Check.True(found != null, "resumed");
+        Check.Equal(folder, found!.Folder, "same folder");
+        Check.Equal("SEED:1789237700", found.Stats.RunKey, "takes the game's current key");
+    }
+
+    [Test]
+    public static void NewRunOnTheSameSeedStartsFresh()
+    {
+        var runs = new RunFolders(NewRoot());
+        SaveRun(runs, Stats("SEED:1789237698"), DateTime.UtcNow);
+        Check.True(runs.FindResumable("SEED:1789240000", loadedFromSave: false) == null, "a new run isn't loaded from a save");
+    }
+
+    [Test]
+    public static void LoadedSaveTakesTheMostRecentlyPlayedOfTheSameSeed()
+    {
+        var runs = new RunFolders(NewRoot());
+        SaveRun(runs, Stats("SEED:1000000000", damage: 1), new DateTime(2026, 9, 1, 0, 0, 0, DateTimeKind.Utc));
+        string recent = SaveRun(runs, Stats("SEED:1100000000", damage: 2), new DateTime(2026, 9, 20, 0, 0, 0, DateTimeKind.Utc));
+        RunFolders.Resumable? found = runs.FindResumable("SEED:1200000000", loadedFromSave: true);
+        Check.Equal(recent, found?.Folder, "the one played last");
+    }
+
+    [Test]
+    public static void AnExactKeyBeatsAMoreRecentSeedMatch()
+    {
+        var runs = new RunFolders(NewRoot());
+        string exact = SaveRun(runs, Stats("SEED:1000000000"), new DateTime(2026, 9, 1, 0, 0, 0, DateTimeKind.Utc));
+        SaveRun(runs, Stats("SEED:1100000000"), new DateTime(2026, 9, 20, 0, 0, 0, DateTimeKind.Utc));
+        Check.Equal(exact, runs.FindResumable("SEED:1000000000", loadedFromSave: true)?.Folder, "exact key");
+    }
+
+    [Test]
+    public static void UnreadableStatsAreSkipped()
+    {
+        var runs = new RunFolders(NewRoot());
+        string folder = runs.Create("SEED:1789237698", DateTime.Now);
+        File.WriteAllText(Path.Combine(folder, RunFolders.StatsFile), "{ not json");
+        Check.True(runs.FindResumable("SEED:1789237698", loadedFromSave: true) == null, "corrupt stats");
+        Check.True(new RunFolders(NewRoot()).FindResumable("SEED:1", loadedFromSave: true) == null, "no runs folder");
+    }
+
+    // The players' report: a co-op run, a singleplayer run started in between, then back to co-op.
+    [Test]
+    public static void ARunInBetweenLosesNothing()
+    {
+        var runs = new RunFolders(NewRoot());
+
+        RunStats coop = Stats("COOP:1790700000", damage: 100);
+        string coopFolder = SaveRun(runs, coop, new DateTime(2026, 10, 3, 18, 0, 0, DateTimeKind.Utc));
+
+        RunStats solo = Stats("SOLO:1790703600", damage: 7);
+        string soloFolder = SaveRun(runs, solo, new DateTime(2026, 10, 3, 19, 0, 0, DateTimeKind.Utc));
+        string soloBefore = File.ReadAllText(Path.Combine(soloFolder, RunFolders.StatsFile));
+
+        // Back to co-op: the game loads its save.
+        RunFolders.Resumable? back = runs.FindResumable("COOP:1790700000", loadedFromSave: true);
+        Check.True(back != null, "co-op found again");
+        Check.Equal(coopFolder, back!.Folder, "co-op's own folder");
+        back.Stats.BeginFight(1, 3, "Jaw Worm");
+        back.Stats.RecordDamage(1, new SourceRef(SourceKind.Power, "POISON_POWER", "Poison"), 50);
+        back.Stats.EndFight();
+        back.Stats.Finished = true;
+        RunStatsStore.Save(back.Stats, Path.Combine(back.Folder, RunFolders.StatsFile));
+
+        RunStats? coopAfter = RunStatsStore.Load(Path.Combine(coopFolder, RunFolders.StatsFile));
+        Check.Equal(150, coopAfter!.Get(1)!.DamageDealt, "both halves of the co-op run");
+        Check.Equal(2, coopAfter.Fights.Count, "both fights");
+        Check.Equal(soloBefore, File.ReadAllText(Path.Combine(soloFolder, RunFolders.StatsFile)), "singleplayer untouched");
+    }
 }

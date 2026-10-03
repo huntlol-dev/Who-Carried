@@ -133,7 +133,7 @@ public static class DebuffBuilderTests
         s.RecordDebuffApplied(1, D("WEAK"), 3);
         s.RecordDebuffReceived(1, D("FRAIL"), 2);
         RunStatsStore.Save(s, path);
-        RunStats? loaded = RunStatsStore.LoadIfResumable(path, "K");
+        RunStats? loaded = RunStatsStore.Load(path);
         Check.Equal(3, loaded!.Get(1)!.DebuffsApplied["Power:WEAK"].Amount, "applied restored");
         Check.Equal(2, loaded.Get(1)!.DebuffsReceived["Power:FRAIL"].Amount, "received restored");
     }

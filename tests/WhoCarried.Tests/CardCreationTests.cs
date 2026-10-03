@@ -92,11 +92,11 @@ public static class CardCreationTests
             File.WriteAllText(path, """
                 {"RunKey":"SEED:1","Players":{"1":{"CardsGiven":7,"CardsCreated":{"Card:SOUL":{"Kind":"Card","Label":"Soul","Amount":9}}}}}
                 """);
-            var s = RunStatsStore.LoadIfResumable(path, "SEED:1")!;
+            var s = RunStatsStore.Load(path)!;
             Check.Equal(0, s.Get(1)!.CardGifts.Count, "no invented history");
             s.RecordCardGeneration(1, 2, Soul);
             RunStatsStore.Save(s, path);
-            var t = RunStatsStore.LoadIfResumable(path, "SEED:1")!.Get(1)!;
+            var t = RunStatsStore.Load(path)!.Get(1)!;
             Check.Equal(10, t.CardsCreated[Soul.Key].Amount, "old creation preserved");
             Check.Equal(8, t.CardsGiven, "old aggregate preserved");
             Check.Equal(1, t.CardGifts[Soul.Key].Amount, "new detail only");
