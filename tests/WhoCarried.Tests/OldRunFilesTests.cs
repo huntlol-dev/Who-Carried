@@ -146,4 +146,45 @@ public static class OldRunFilesTests
         Check.True(File.Exists(Path.Combine(folder, RunFolders.StatsFile)), "stats there");
         Check.True(File.Exists(Path.Combine(folder, RunFolders.LogFile)), "log there");
     }
+
+    // A guest's log and stats have different clocks, here minutes apart: left to its own key, the late one would get a second folder.
+    [Test]
+    public static void GuestLogLeftBehindJoinsItsStatsLater()
+    {
+        (string dataDir, RunFolders runs) = NewDataDir();
+        WriteStats(Path.Combine(dataDir, "current_run.dat"), "CEKDYSK8A9AB:1790705897");
+        string log = Path.Combine(dataDir, "events.log");
+        WriteLog(log, Header("CEKDYSK8A9AB:1790705800"), "line");
+
+        using (new FileStream(log, FileMode.Open, FileAccess.Read, FileShare.None))
+            OldRunFiles.Move(dataDir, runs);
+        (int second, string? error) = OldRunFiles.Move(dataDir, runs);
+
+        Check.Equal(1, second, "next launch moves the log");
+        Check.Equal<string?>(null, error, "no error");
+        string folder = FolderFor(runs, "CEKDYSK8A9AB:1790705897");
+        Check.True(File.Exists(Path.Combine(folder, RunFolders.StatsFile)), "stats there");
+        Check.True(File.Exists(Path.Combine(folder, RunFolders.LogFile)), "log joined them");
+        Check.Equal(1, Directory.GetDirectories(runs.Root).Length, "one folder, not two");
+    }
+
+    [Test]
+    public static void GuestStatsLeftBehindJoinTheirLogLater()
+    {
+        (string dataDir, RunFolders runs) = NewDataDir();
+        string stats = Path.Combine(dataDir, "current_run.dat");
+        WriteStats(stats, "CEKDYSK8A9AB:1790705897");
+        WriteLog(Path.Combine(dataDir, "events.log"), Header("CEKDYSK8A9AB:1790705800"), "line");
+
+        using (new FileStream(stats, FileMode.Open, FileAccess.Read, FileShare.None))
+            OldRunFiles.Move(dataDir, runs);
+        (int second, string? error) = OldRunFiles.Move(dataDir, runs);
+
+        Check.Equal(1, second, "next launch moves the stats");
+        Check.Equal<string?>(null, error, "no error");
+        string folder = FolderFor(runs, "CEKDYSK8A9AB:1790705800");
+        Check.True(File.Exists(Path.Combine(folder, RunFolders.StatsFile)), "stats joined the log");
+        Check.True(File.Exists(Path.Combine(folder, RunFolders.LogFile)), "log there");
+        Check.Equal(1, Directory.GetDirectories(runs.Root).Length, "one folder, not two");
+    }
 }

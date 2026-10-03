@@ -4,8 +4,9 @@ namespace WhoCarried.Core;
 /// Moves the run files older versions kept in the data folder's root (current_run.dat with events.log, and the
 /// ".previous" pair) into their runs\ folders, once. Each file's run comes from inside it; a stats file and a log go
 /// together when their seeds match (a co-op guest's log header and stats can have different start times). A file whose
-/// run can't be read stays where it is, and nothing already in runs\ is ever overwritten. What fails is tried again on
-/// the next start. Never throws. Can come out once nearly everyone has been through it.
+/// partner already moved on an earlier start joins it there. A file whose run can't be read stays where it is, and
+/// nothing already in runs\ is ever overwritten. What fails is tried again on the next start. Never throws. Can come
+/// out once nearly everyone has been through it.
 /// </summary>
 public static class OldRunFiles
 {
@@ -31,16 +32,17 @@ public static class OldRunFiles
             // Together when they're the same run: the folder is named from the stats, which carry the latest key.
             if (statsKey.Length > 0 && logKey.Length > 0 && RunFolders.Seed(statsKey) == RunFolders.Seed(logKey))
                 logKey = statsKey;
-            if (statsKey.Length > 0) MoveOne(statsPath, statsKey, RunFolders.StatsFile);
-            if (logKey.Length > 0) MoveOne(logPath, logKey, RunFolders.LogFile);
+            if (statsKey.Length > 0) MoveOne(statsPath, statsKey, RunFolders.StatsFile, RunFolders.LogFile, File.Exists(logPath));
+            if (logKey.Length > 0) MoveOne(logPath, logKey, RunFolders.LogFile, RunFolders.StatsFile, File.Exists(statsPath));
         }
         return (moved, error);
 
-        void MoveOne(string source, string runKey, string fileName)
+        void MoveOne(string source, string runKey, string fileName, string partnerName, bool partnerInRoot)
         {
             try
             {
-                string folder = Path.Combine(runs.Root, RunFolders.Name(runKey, File.GetLastWriteTime(source)));
+                string? folder = partnerInRoot ? null : PartnersFolder(runs, runKey, fileName, partnerName);
+                folder ??= Path.Combine(runs.Root, RunFolders.Name(runKey, File.GetLastWriteTime(source)));
                 Directory.CreateDirectory(folder);
                 File.Move(source, Path.Combine(folder, fileName), overwrite: false);
                 moved++;
@@ -51,6 +53,13 @@ public static class OldRunFiles
             }
         }
     }
+
+    /// <summary>The most recently played folder of this run's seed that has its partner file but not this one, or null.</summary>
+    private static string? PartnersFolder(RunFolders runs, string runKey, string fileName, string partnerName) =>
+        runs.FoldersFor(RunFolders.Seed(runKey))
+            .Where(f => File.Exists(Path.Combine(f, partnerName)) && !File.Exists(Path.Combine(f, fileName)))
+            .OrderByDescending(RunFolders.SafeLastPlayed)
+            .FirstOrDefault();
 
     private static string LogKey(string path)
     {

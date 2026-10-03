@@ -169,7 +169,7 @@ public sealed class RunFolders(string root)
         }
     }
 
-    private static DateTime SafeLastPlayed(string folder)
+    internal static DateTime SafeLastPlayed(string folder)
     {
         try { return LastPlayed(folder); }
         catch (Exception) { return DateTime.MinValue; }
